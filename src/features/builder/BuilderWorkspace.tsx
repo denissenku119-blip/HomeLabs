@@ -1,0 +1,190 @@
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, PanelLeft, PanelRight, Plus } from 'lucide-react';
+import type { ComponentDefinition } from '@/types';
+import { useProjectState } from '@/hooks/useProjectState';
+import { ComponentLibrary } from '@/features/builder/ComponentLibrary';
+import { ArchitectureCanvas } from '@/features/builder/ArchitectureCanvas';
+import { NodeDetailsPanel } from '@/features/builder/NodeDetailsPanel';
+import { ProjectSummary } from '@/features/builder/ProjectSummary';
+import { componentCatalog } from '@/data/componentCatalog';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { cn } from '@/lib/utils';
+import type { CreateProjectInput } from '@/types';
+
+interface BuilderWorkspaceProps {
+  projectId: string;
+  initialData?: CreateProjectInput | null;
+}
+
+export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspaceProps) {
+  const { state, actions } = useProjectState(projectId, initialData);
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [showGrid, setShowGrid] = useState(true);
+  const [draggedDef, setDraggedDef] = useState<ComponentDefinition | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<'library' | 'details' | null>(null);
+
+  const { project, selectedId, connectingFromId, pendingConnectionType, saved } = state;
+  const { selectedComponent } = actions;
+
+  const addAtDefault = (def: ComponentDefinition) => {
+    const offset = project.components.length * 24;
+    actions.addComponent(def, 160 + (offset % 180), 100 + (offset % 160));
+    setMobilePanel(null);
+  };
+
+  const handleAddFirst = () => {
+    const router = componentCatalog.find((item) => item.name === 'Router');
+    if (router) addAtDefault(router);
+  };
+
+  const handleCompleteConnection = (targetId: string) => {
+    if (connectingFromId) {
+      actions.addConnection(connectingFromId, targetId, pendingConnectionType);
+      actions.cancelConnecting();
+    }
+  };
+
+  const handleDeleteSelected = (id: string) => {
+    actions.deleteComponent(id);
+    setMobilePanel(null);
+  };
+
+  const handleSelect = (id: string | null) => {
+    actions.selectComponent(id);
+    if (id) setMobilePanel('details');
+  };
+
+  const panelButton = (panel: 'library' | 'details', label: string, icon: React.ReactNode) => (
+    <button
+      type="button"
+      onClick={() => setMobilePanel((current) => (current === panel ? null : panel))}
+      className={cn(
+        'flex items-center justify-center gap-2 min-h-10 px-3 text-xs font-medium rounded-lg border transition-colors',
+        mobilePanel === panel
+          ? 'bg-accent/10 text-accent border-accent/30'
+          : 'bg-base-850 text-base-200 border-base-700 hover:text-base-50'
+      )}
+      aria-expanded={mobilePanel === panel}
+    >
+      {icon}
+      {label}
+      {mobilePanel === panel ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+    </button>
+  );
+
+  return (
+    <div className="flex flex-col h-full min-h-[620px] bg-base-950">
+      <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-b border-base-700 bg-base-900">
+        {panelButton('library', 'Components', <PanelLeft className="w-4 h-4" />)}
+        {panelButton('details', selectedComponent ? 'Selected component' : 'Overview', <PanelRight className="w-4 h-4" />)}
+        <Badge variant="default" className="ml-auto">{project.components.length} placed</Badge>
+      </div>
+
+      <div className="relative flex-1 flex min-h-0 flex-col lg:flex-row">
+        <aside className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 border-r border-base-700 bg-base-900 min-h-0">
+          <ComponentLibrary
+            onAdd={addAtDefault}
+            onDragStart={setDraggedDef}
+            onDragEnd={() => setDraggedDef(null)}
+          />
+        </aside>
+
+        {mobilePanel === 'library' && (
+          <div className="lg:hidden absolute inset-x-0 top-0 z-30 h-[min(70vh,520px)] bg-base-900 border-b border-base-700 shadow-elevated">
+            <ComponentLibrary
+              compact
+              onAdd={addAtDefault}
+              onDragStart={setDraggedDef}
+              onDragEnd={() => setDraggedDef(null)}
+            />
+          </div>
+        )}
+
+        <ArchitectureCanvas
+          components={project.components}
+          connections={project.connections}
+          selectedId={selectedId}
+          connectingFromId={connectingFromId}
+          pendingConnectionType={pendingConnectionType}
+          scale={scale}
+          pan={pan}
+          showGrid={showGrid}
+          onScaleChange={setScale}
+          onPanChange={setPan}
+          onToggleGrid={() => setShowGrid((value) => !value)}
+          onSelect={handleSelect}
+          onMove={actions.moveComponent}
+          onAdd={actions.addComponent}
+          onDelete={handleDeleteSelected}
+          onDuplicate={actions.duplicateComponent}
+          onStartConnecting={actions.startConnecting}
+          onCompleteConnecting={handleCompleteConnection}
+          onCancelConnecting={actions.cancelConnecting}
+          onDeleteConnection={actions.deleteConnection}
+          onAddFirst={handleAddFirst}
+          draggedDef={draggedDef}
+          onDropDef={(def, x, y) => {
+            actions.addComponent(def, Math.max(12, x), Math.max(12, y));
+            setDraggedDef(null);
+          }}
+        />
+
+        <aside className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 border-l border-base-700 bg-base-900 min-h-0">
+          <NodeDetailsPanel
+            component={selectedComponent}
+            connections={project.connections}
+            allComponents={project.components}
+            connectingFromId={connectingFromId}
+            pendingConnectionType={pendingConnectionType}
+            onUpdate={actions.updateComponent}
+            onDelete={handleDeleteSelected}
+            onDuplicate={actions.duplicateComponent}
+            onStartConnecting={actions.startConnecting}
+            onCancelConnecting={actions.cancelConnecting}
+            onSetConnectionType={actions.setPendingConnectionType}
+            onSelectNode={handleSelect}
+            onDeleteConnection={actions.deleteConnection}
+            onClose={() => actions.selectComponent(null)}
+          />
+        </aside>
+
+        {mobilePanel === 'details' && (
+          <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 max-h-[72vh] bg-base-900 border-t border-base-700 shadow-elevated">
+            <NodeDetailsPanel
+              component={selectedComponent}
+              connections={project.connections}
+              allComponents={project.components}
+              connectingFromId={connectingFromId}
+              pendingConnectionType={pendingConnectionType}
+              onUpdate={actions.updateComponent}
+              onDelete={handleDeleteSelected}
+              onDuplicate={actions.duplicateComponent}
+              onStartConnecting={actions.startConnecting}
+              onCancelConnecting={actions.cancelConnecting}
+              onSetConnectionType={actions.setPendingConnectionType}
+              onSelectNode={handleSelect}
+              onDeleteConnection={actions.deleteConnection}
+              onClose={() => setMobilePanel(null)}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-t border-base-700 bg-base-900">
+        <Button size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setMobilePanel('library')}>
+          Add component
+        </Button>
+        <span className="text-2xs text-base-400 ml-auto">Tap a node to edit</span>
+      </div>
+
+      <ProjectSummary
+        components={project.components}
+        connections={project.connections}
+        currency={project.currency}
+        saved={saved}
+      />
+    </div>
+  );
+}
