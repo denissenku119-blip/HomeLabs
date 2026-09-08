@@ -57,3 +57,35 @@
     background-size: 20px 20px;
   }
 }
+
+@media print {
+  .report-no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: #1a1a1a !important;
+  }
+
+  .report-header,
+  .report-section {
+    color: #1a1a1a !important;
+  }
+
+  .report-section-title {
+    color: #1a1a1a !important;
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  .report-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

@@ -1,5 +1,5 @@
 import { useParams, useLocation, Link } from 'react-router-dom';
-import { Save, Download, Settings } from 'lucide-react';
+import { Save, Settings, FileText } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -21,9 +21,11 @@ export function ProjectWorkspacePage() {
           <Button size="sm" variant="secondary" leftIcon={<Save className="w-3.5 h-3.5" />} disabled>
             <span className="hidden sm:inline">Saved</span>
           </Button>
-          <Button size="sm" variant="secondary" leftIcon={<Download className="w-3.5 h-3.5" />} disabled>
-            <span className="hidden sm:inline">Export</span>
-          </Button>
+          <Link to={`/app/project/${id}/report`}>
+            <Button size="sm" variant="secondary" leftIcon={<FileText className="w-3.5 h-3.5" />}>
+              <span className="hidden sm:inline">Report</span>
+            </Button>
+          </Link>
           <Link to="/app/settings">
             <Button size="sm" variant="ghost" leftIcon={<Settings className="w-3.5 h-3.5" />} aria-label="Settings" />
           </Link>

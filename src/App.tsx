@@ -6,6 +6,7 @@ import { DashboardPage } from '@/pages/app/DashboardPage';
 import { NewProjectPage } from '@/pages/app/NewProjectPage';
 import { ProjectsPage } from '@/pages/app/ProjectsPage';
 import { ProjectWorkspacePage } from '@/pages/app/ProjectWorkspacePage';
+import { ReportPage } from '@/pages/app/ReportPage';
 import { SettingsPage } from '@/pages/app/SettingsPage';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/app/new" element={<NewProjectPage />} />
         <Route path="/app/projects" element={<ProjectsPage />} />
         <Route path="/app/project/:id" element={<ProjectWorkspacePage />} />
+        <Route path="/app/project/:id/report" element={<ReportPage />} />
         <Route path="/app/settings" element={<SettingsPage />} />
 
         {/* Fallback */}
