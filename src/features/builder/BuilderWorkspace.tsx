@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, PanelLeft, PanelRight, Plus } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { ChevronDown, ChevronUp, PanelLeft, PanelRight, Plus, Gauge, Cpu } from 'lucide-react';
 import type { HardwareDefinition } from '@/types';
 import { useProjectState } from '@/hooks/useProjectState';
 import { HardwareLibrary } from '@/features/builder/HardwareLibrary';
@@ -7,7 +7,10 @@ import { CustomHardwareModal } from '@/features/builder/CustomHardwareModal';
 import { ArchitectureCanvas } from '@/features/builder/ArchitectureCanvas';
 import { NodeDetailsPanel } from '@/features/builder/NodeDetailsPanel';
 import { ProjectSummary } from '@/features/builder/ProjectSummary';
+import { ArchitectureAnalysisPanel } from '@/features/builder/ArchitectureAnalysisPanel';
 import { hardwareCatalog } from '@/data/hardware';
+import { calculateProjectMetrics } from '@/features/calculations/calculationEngine';
+import { analyzeArchitecture } from '@/features/analysis/analysisEngine';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
@@ -18,6 +21,8 @@ interface BuilderWorkspaceProps {
   initialData?: CreateProjectInput | null;
 }
 
+type RightPanelTab = 'component' | 'analysis';
+
 export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspaceProps) {
   const { state, actions } = useProjectState(projectId, initialData);
   const [scale, setScale] = useState(1);
@@ -26,9 +31,20 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
   const [draggedHw, setDraggedHw] = useState<HardwareDefinition | null>(null);
   const [mobilePanel, setMobilePanel] = useState<'library' | 'details' | null>(null);
   const [customModalOpen, setCustomModalOpen] = useState(false);
+  const [rightTab, setRightTab] = useState<RightPanelTab>('component');
 
   const { project, selectedId, connectingFromId, pendingConnectionType, saved } = state;
   const { selectedComponent } = actions;
+
+  const metrics = useMemo(
+    () => calculateProjectMetrics(project, { electricityCostPerKwh: project.electricityCostPerKwh }),
+    [project]
+  );
+
+  const analysis = useMemo(
+    () => analyzeArchitecture(project, metrics),
+    [project, metrics]
+  );
 
   const handleAddHardware = (hw: HardwareDefinition) => {
     actions.addHardware(hw);
@@ -59,7 +75,10 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
 
   const handleSelect = (id: string | null) => {
     actions.selectComponent(id);
-    if (id) setMobilePanel('details');
+    if (id) {
+      setRightTab('component');
+      setMobilePanel('details');
+    }
   };
 
   const panelButton = (panel: 'library' | 'details', label: string, icon: React.ReactNode) => (
@@ -80,6 +99,62 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
     </button>
   );
 
+  const tabBar = (
+    <div className="flex items-center gap-1 px-2 py-1.5 border-b border-base-700 bg-base-900 flex-shrink-0">
+      <button
+        onClick={() => setRightTab('component')}
+        className={cn(
+          'flex items-center gap-1.5 px-2.5 py-1.5 text-2xs font-medium rounded-md transition-colors',
+          rightTab === 'component'
+            ? 'bg-base-800 text-base-100'
+            : 'text-base-400 hover:text-base-200'
+        )}
+      >
+        <Cpu className="w-3 h-3" />
+        {selectedComponent ? 'Component' : 'Overview'}
+      </button>
+      <button
+        onClick={() => setRightTab('analysis')}
+        className={cn(
+          'flex items-center gap-1.5 px-2.5 py-1.5 text-2xs font-medium rounded-md transition-colors',
+          rightTab === 'analysis'
+            ? 'bg-base-800 text-base-100'
+            : 'text-base-400 hover:text-base-200'
+        )}
+      >
+        <Gauge className="w-3 h-3" />
+        Analysis
+        {analysis.warnings.length > 0 && (
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-warning-500/20 text-warning-400 text-2xs font-bold">
+            {analysis.warnings.length}
+          </span>
+        )}
+      </button>
+    </div>
+  );
+
+  const rightPanelContent = rightTab === 'analysis' ? (
+    <ArchitectureAnalysisPanel analysis={analysis} />
+  ) : (
+    <NodeDetailsPanel
+      component={selectedComponent}
+      connections={project.connections}
+      allComponents={project.components}
+      connectingFromId={connectingFromId}
+      pendingConnectionType={pendingConnectionType}
+      onUpdate={actions.updateComponent}
+      onResetToCatalog={actions.resetToCatalog}
+      onDelete={handleDeleteSelected}
+      onDuplicate={actions.duplicateComponent}
+      onStartConnecting={actions.startConnecting}
+      onCancelConnecting={actions.cancelConnecting}
+      onSetConnectionType={actions.setPendingConnectionType}
+      onSelectNode={handleSelect}
+      onDeleteConnection={actions.deleteConnection}
+      onClose={() => actions.selectComponent(null)}
+    />
+  );
+
   return (
     <div className="flex flex-col h-full min-h-[620px] bg-base-950">
       <CustomHardwareModal
@@ -90,7 +165,7 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
 
       <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-b border-base-700 bg-base-900">
         {panelButton('library', 'Hardware', <PanelLeft className="w-4 h-4" />)}
-        {panelButton('details', selectedComponent ? 'Selected' : 'Overview', <PanelRight className="w-4 h-4" />)}
+        {panelButton('details', rightTab === 'analysis' ? 'Analysis' : (selectedComponent ? 'Selected' : 'Overview'), <PanelRight className="w-4 h-4" />)}
         <Badge variant="default" className="ml-auto">{project.components.length} placed</Badge>
       </div>
 
@@ -141,45 +216,19 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
           }}
         />
 
-        <aside className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 border-l border-base-700 bg-base-900 min-h-0">
-          <NodeDetailsPanel
-            component={selectedComponent}
-            connections={project.connections}
-            allComponents={project.components}
-            connectingFromId={connectingFromId}
-            pendingConnectionType={pendingConnectionType}
-            onUpdate={actions.updateComponent}
-            onResetToCatalog={actions.resetToCatalog}
-            onDelete={handleDeleteSelected}
-            onDuplicate={actions.duplicateComponent}
-            onStartConnecting={actions.startConnecting}
-            onCancelConnecting={actions.cancelConnecting}
-            onSetConnectionType={actions.setPendingConnectionType}
-            onSelectNode={handleSelect}
-            onDeleteConnection={actions.deleteConnection}
-            onClose={() => actions.selectComponent(null)}
-          />
+        <aside className="hidden lg:flex lg:w-72 xl:w-80 flex-shrink-0 border-l border-base-700 bg-base-900 min-h-0 flex-col">
+          {tabBar}
+          <div className="flex-1 min-h-0">
+            {rightPanelContent}
+          </div>
         </aside>
 
         {mobilePanel === 'details' && (
-          <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 max-h-[72vh] bg-base-900 border-t border-base-700 shadow-elevated">
-            <NodeDetailsPanel
-              component={selectedComponent}
-              connections={project.connections}
-              allComponents={project.components}
-              connectingFromId={connectingFromId}
-              pendingConnectionType={pendingConnectionType}
-              onUpdate={actions.updateComponent}
-              onResetToCatalog={actions.resetToCatalog}
-              onDelete={handleDeleteSelected}
-              onDuplicate={actions.duplicateComponent}
-              onStartConnecting={actions.startConnecting}
-              onCancelConnecting={actions.cancelConnecting}
-              onSetConnectionType={actions.setPendingConnectionType}
-              onSelectNode={handleSelect}
-              onDeleteConnection={actions.deleteConnection}
-              onClose={() => setMobilePanel(null)}
-            />
+          <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 max-h-[72vh] bg-base-900 border-t border-base-700 shadow-elevated flex flex-col">
+            {tabBar}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {rightPanelContent}
+            </div>
           </div>
         )}
       </div>
