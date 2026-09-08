@@ -136,6 +136,7 @@ export interface Project {
   experienceLevel: ExperienceLevel;
   budget?: number;
   currency: Currency;
+  electricityCostPerKwh: number;
   status: ProjectStatus;
   components: ProjectComponent[];
   connections: Connection[];

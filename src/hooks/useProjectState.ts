@@ -34,7 +34,7 @@ export interface ProjectActions {
   startConnecting: (instanceId: string) => void;
   cancelConnecting: () => void;
   setPendingConnectionType: (type: ConnectionType) => void;
-  updateProjectMeta: (updates: Partial<Pick<Project, 'name' | 'budget' | 'currency'>>) => void;
+  updateProjectMeta: (updates: Partial<Pick<Project, 'name' | 'budget' | 'currency' | 'electricityCostPerKwh'>>) => void;
   selectedComponent: ProjectComponent | null;
 }
 
@@ -261,7 +261,7 @@ export function useProjectState(
   }, []);
 
   const updateProjectMeta = useCallback(
-    (updates: Partial<Pick<Project, 'name' | 'budget' | 'currency'>>) => {
+    (updates: Partial<Pick<Project, 'name' | 'budget' | 'currency' | 'electricityCostPerKwh'>>) => {
       setProject((prev) => ({
         ...prev,
         ...updates,

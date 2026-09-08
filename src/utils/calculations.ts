@@ -1,24 +1,25 @@
 import type { ProjectComponent, Connection, AnalysisResult } from '@/types';
 import { CURRENCY_SYMBOLS } from '@/data/constants';
+import { calculateCost } from '@/features/calculations/costCalculations';
+import { calculatePower } from '@/features/calculations/powerCalculations';
+import { calculateStorage } from '@/features/calculations/storageCalculations';
+import { calculateNetwork } from '@/features/calculations/networkCalculations';
 
 export function calculateAnalysis(
   components: ProjectComponent[],
   _connections: Connection[]
 ): AnalysisResult {
   void _connections;
-  const totalCost = components.reduce((sum, c) => sum + (c.price || 0), 0);
-  const totalPowerWatts = components.reduce((sum, c) => sum + (c.powerWatts || 0), 0);
-  const totalStorageTB = components.reduce((sum, c) => sum + (c.storageTB || 0), 0);
-  const maxNetworkSpeedGbps = components.reduce(
-    (max, c) => Math.max(max, c.networkSpeedGbps || 0),
-    0
-  );
+  const cost = calculateCost(components, 'USD');
+  const power = calculatePower(components);
+  const storage = calculateStorage(components);
+  const network = calculateNetwork(components, _connections);
 
   return {
-    totalCost,
-    totalPowerWatts,
-    totalStorageTB,
-    maxNetworkSpeedGbps,
+    totalCost: cost.totalKnownCost,
+    totalPowerWatts: power.totalKnownPowerWatts,
+    totalStorageTB: storage.totalRawStorageTB,
+    maxNetworkSpeedGbps: network.fastestInterfaceGbps ?? 0,
     componentCount: components.length,
   };
 }

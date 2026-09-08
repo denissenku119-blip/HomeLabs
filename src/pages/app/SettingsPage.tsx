@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
@@ -18,14 +18,59 @@ const voltageOptions = [
   { value: '230', label: '230V (Europe / Asia)' },
 ];
 
+const SETTINGS_KEY = 'homelab-architect:settings';
+
+interface AppSettings {
+  defaultCurrency: string;
+  defaultVoltage: string;
+  electricityRate: string;
+}
+
+function loadSettings(): AppSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return JSON.parse(raw) as AppSettings;
+  } catch {
+    // fail silently
+  }
+  return { defaultCurrency: 'USD', defaultVoltage: '120', electricityRate: '0.15' };
+}
+
+function saveSettings(settings: AppSettings): void {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // fail silently
+  }
+}
+
 export function SettingsPage() {
   const [currency, setCurrency] = useState('USD');
   const [voltage, setVoltage] = useState('120');
+  const [electricityRate, setElectricityRate] = useState('0.15');
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    const s = loadSettings();
+    setCurrency(s.defaultCurrency);
+    setVoltage(s.defaultVoltage);
+    setElectricityRate(s.electricityRate);
+  }, []);
+
   const handleSave = () => {
+    saveSettings({
+      defaultCurrency: currency,
+      defaultVoltage: voltage,
+      electricityRate: electricityRate || '0.15',
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleReset = () => {
+    setCurrency('USD');
+    setVoltage('120');
+    setElectricityRate('0.15');
   };
 
   return (
@@ -55,12 +100,14 @@ export function SettingsPage() {
                 helperText="Used for power cost calculations."
               />
               <Input
-                label="Electricity rate"
+                label="Electricity rate (per kWh)"
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="0.12"
-                helperText="Cost per kWh, used to estimate ongoing power costs."
+                placeholder="0.15"
+                value={electricityRate}
+                onChange={(e) => setElectricityRate(e.target.value)}
+                helperText="Cost per kWh, used to estimate ongoing power costs. This is a configurable assumption — enter your local electricity price."
               />
             </div>
           </Card>
@@ -81,7 +128,7 @@ export function SettingsPage() {
           </Card>
 
           <div className="flex justify-end gap-3">
-            <Button variant="ghost">Reset</Button>
+            <Button variant="ghost" onClick={handleReset}>Reset</Button>
             <Button
               leftIcon={<Save className="w-4 h-4" />}
               onClick={handleSave}

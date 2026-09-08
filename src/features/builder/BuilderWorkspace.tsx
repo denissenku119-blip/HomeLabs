@@ -195,6 +195,8 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
         components={project.components}
         connections={project.connections}
         currency={project.currency}
+        electricityCostPerKwh={project.electricityCostPerKwh}
+        budget={project.budget}
         saved={saved}
       />
     </div>

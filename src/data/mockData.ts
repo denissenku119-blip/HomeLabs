@@ -31,6 +31,7 @@ function buildProject(
     experienceLevel: level,
     budget,
     currency: 'USD',
+    electricityCostPerKwh: 0.15,
     status: 'draft',
     components,
     connections: [],
