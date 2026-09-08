@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import type { ArchitectureAnalysis, Finding, Severity, AnalysisCategory } from '@/features/analysis/types';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/i18n/I18nContext';
 
 interface ArchitectureAnalysisPanelProps {
   analysis: ArchitectureAnalysis;
@@ -53,6 +54,7 @@ const CATEGORY_ICONS: Record<AnalysisCategory, React.ElementType> = {
 };
 
 export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPanelProps) {
+  const { t } = useI18n();
   const [expandedFinding, setExpandedFinding] = useState<string | null>(null);
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
 
@@ -68,15 +70,13 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
     return (
       <div className="flex flex-col h-full">
         <div className="px-3 py-2.5 border-b border-base-700 flex-shrink-0">
-          <h2 className="text-sm font-semibold text-base-100">Architecture Health</h2>
+          <h2 className="text-sm font-semibold text-base-100">{t('analysis.architectureHealth')}</h2>
         </div>
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center">
             <Gauge className="w-10 h-10 text-base-600 mx-auto mb-3" />
             <p className="text-xs text-base-400">
-              Start building your architecture
-              <br />
-              to receive analysis.
+              {t('analysis.startBuilding')}
             </p>
           </div>
         </div>
@@ -90,8 +90,8 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 py-2.5 border-b border-base-700 flex-shrink-0">
-        <h2 className="text-sm font-semibold text-base-100">Architecture Health</h2>
-        <p className="text-2xs text-base-400 mt-0.5">Based on the architecture you've modeled</p>
+        <h2 className="text-sm font-semibold text-base-100">{t('analysis.architectureHealth')}</h2>
+        <p className="text-2xs text-base-400 mt-0.5">{t('analysis.basedOnModeled')}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -139,7 +139,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
                 return (
                   <div key={cat.category} className="flex items-center gap-2">
                     <CatIcon className="w-3 h-3 text-base-400 flex-shrink-0" />
-                    <span className="text-2xs text-base-300 w-24 flex-shrink-0 truncate">{cat.label}</span>
+                    <span className="text-2xs text-base-300 w-24 flex-shrink-0 truncate">{t(`analysisCat.${cat.category}`)}</span>
                     <div className="flex-1 h-1 rounded-full bg-base-800 overflow-hidden">
                       <div
                         className={cn(
@@ -162,7 +162,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
         {/* Critical issues */}
         {analysis.criticalIssues.length > 0 && (
           <FindingSection
-            title="Critical Issues"
+            title={t('analysis.criticalIssues')}
             findings={analysis.criticalIssues}
             expandedFinding={expandedFinding}
             onToggle={toggleFinding}
@@ -173,7 +173,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
         {/* Warnings */}
         {analysis.warnings.length > 0 && (
           <FindingSection
-            title="Warnings"
+            title={t('analysis.warnings')}
             findings={analysis.warnings}
             expandedFinding={expandedFinding}
             onToggle={toggleFinding}
@@ -184,7 +184,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
         {/* Recommendations */}
         {analysis.recommendations.length > 0 && (
           <FindingSection
-            title="Recommendations"
+            title={t('analysis.recommendations')}
             findings={analysis.recommendations}
             expandedFinding={expandedFinding}
             onToggle={toggleFinding}
@@ -195,7 +195,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
         {/* Bottlenecks */}
         {analysis.bottlenecks.length > 0 && (
           <FindingSection
-            title="Potential Bottlenecks"
+            title={t('analysis.potentialBottlenecks')}
             findings={analysis.bottlenecks}
             expandedFinding={expandedFinding}
             onToggle={toggleFinding}
@@ -206,7 +206,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
         {/* Strengths */}
         {analysis.strengths.length > 0 && (
           <FindingSection
-            title="Strengths"
+            title={t('analysis.strengths')}
             findings={analysis.strengths}
             expandedFinding={expandedFinding}
             onToggle={toggleFinding}
@@ -216,7 +216,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
         {/* Missing info */}
         {analysis.missingInfo.length > 0 && (
           <FindingSection
-            title="Missing Information"
+            title={t('analysis.missingInformation')}
             findings={analysis.missingInfo}
             expandedFinding={expandedFinding}
             onToggle={toggleFinding}
@@ -227,7 +227,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
         {sortedFindings.length > 0 && analysis.criticalIssues.length === 0 && analysis.warnings.length === 0 && (
           <div className="px-3 py-2">
             <p className="text-2xs text-base-400 text-center">
-              {sortedFindings.length} finding{sortedFindings.length !== 1 ? 's' : ''} — no major issues detected.
+              {sortedFindings.length} {t('analysis.findings')} — {t('analysis.noMajorIssues')}
             </p>
           </div>
         )}

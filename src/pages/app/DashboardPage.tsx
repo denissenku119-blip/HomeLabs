@@ -11,8 +11,10 @@ import { StatCard } from '@/components/ui/StatCard';
 import { mockProjects } from '@/data/mockData';
 import { loadAllProjects } from '@/utils/projectStore';
 import { calculateAnalysis } from '@/utils/calculations';
+import { useI18n } from '@/i18n/I18nContext';
 
 export function DashboardPage() {
+  const { t, locale } = useI18n();
   const savedProjects = useMemo(() => loadAllProjects(), []);
   const projects = [...savedProjects, ...mockProjects];
   const hasProjects = projects.length > 0;
@@ -31,12 +33,12 @@ export function DashboardPage() {
     <AppShell>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <SectionHeader
-          title="Your HomeLab"
-          description="Design, analyze and document your infrastructure."
+          title={t('dashboard.yourHomelab')}
+          description={t('dashboard.description')}
           action={
             <Link to="/app/new">
               <Button leftIcon={<Plus className="w-4 h-4" />}>
-                New HomeLab
+                {t('dashboard.newHomelab')}
               </Button>
             </Link>
           }
@@ -44,22 +46,22 @@ export function DashboardPage() {
 
         {hasProjects && (
           <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Projects" value={projects.length} icon={<FolderOpen className="w-4 h-4" />} />
-            <StatCard label="Components" value={totalComponents} icon={<Cpu className="w-4 h-4" />} />
-            <StatCard label="Total Est. Cost" value={totalCost > 0 ? `$${totalCost.toLocaleString()}` : '—'} variant="accent" />
-            <StatCard label="Total Power" value={totalPower > 0 ? totalPower : '—'} unit={totalPower > 0 ? 'W' : ''} />
+            <StatCard label={t('dashboard.projects')} value={projects.length} icon={<FolderOpen className="w-4 h-4" />} />
+            <StatCard label={t('dashboard.components')} value={totalComponents} icon={<Cpu className="w-4 h-4" />} />
+            <StatCard label={t('dashboard.totalEstCost')} value={totalCost > 0 ? totalCost.toLocaleString(locale) : '—'} variant="accent" />
+            <StatCard label={t('dashboard.totalPower')} value={totalPower > 0 ? totalPower : '—'} unit={totalPower > 0 ? 'W' : ''} />
           </div>
         )}
 
         <div className="mt-10">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-base-50">Recent Projects</h2>
+            <h2 className="text-lg font-bold text-base-50">{t('dashboard.recentProjects')}</h2>
             {hasProjects && (
               <Link
                 to="/app/projects"
                 className="text-sm font-medium text-accent hover:text-accent-300 transition-colors inline-flex items-center gap-1"
               >
-                View all
+                {t('dashboard.viewAll')}
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             )}
@@ -82,12 +84,12 @@ export function DashboardPage() {
             <Card>
               <EmptyState
                 icon={<FolderOpen className="w-8 h-8" />}
-                title="No projects yet"
-                description="Create your first HomeLab project to start designing your infrastructure."
+                title={t('dashboard.noProjectsYet')}
+                description={t('dashboard.createFirstDescription')}
                 action={
                   <Link to="/app/new">
                     <Button leftIcon={<Plus className="w-4 h-4" />}>
-                      Create your first project
+                      {t('dashboard.createFirstProject')}
                     </Button>
                   </Link>
                 }

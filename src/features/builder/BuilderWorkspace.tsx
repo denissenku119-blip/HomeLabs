@@ -14,6 +14,7 @@ import { analyzeArchitecture } from '@/features/analysis/analysisEngine';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/i18n/I18nContext';
 import type { CreateProjectInput, CustomHardwareInput } from '@/types';
 
 interface BuilderWorkspaceProps {
@@ -24,6 +25,7 @@ interface BuilderWorkspaceProps {
 type RightPanelTab = 'component' | 'analysis';
 
 export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspaceProps) {
+  const { t } = useI18n();
   const { state, actions } = useProjectState(projectId, initialData);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -111,7 +113,7 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
         )}
       >
         <Cpu className="w-3 h-3" />
-        {selectedComponent ? 'Component' : 'Overview'}
+        {selectedComponent ? t('builder.component') : t('builder.overview')}
       </button>
       <button
         onClick={() => setRightTab('analysis')}
@@ -123,7 +125,7 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
         )}
       >
         <Gauge className="w-3 h-3" />
-        Analysis
+        {t('builder.analysis')}
         {analysis.warnings.length > 0 && (
           <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-warning-500/20 text-warning-400 text-2xs font-bold">
             {analysis.warnings.length}
@@ -164,9 +166,9 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
       />
 
       <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-b border-base-700 bg-base-900">
-        {panelButton('library', 'Hardware', <PanelLeft className="w-4 h-4" />)}
-        {panelButton('details', rightTab === 'analysis' ? 'Analysis' : (selectedComponent ? 'Selected' : 'Overview'), <PanelRight className="w-4 h-4" />)}
-        <Badge variant="default" className="ml-auto">{project.components.length} placed</Badge>
+        {panelButton('library', t('builder.hardware'), <PanelLeft className="w-4 h-4" />)}
+        {panelButton('details', rightTab === 'analysis' ? t('builder.analysis') : (selectedComponent ? t('builder.selected') : t('builder.overview')), <PanelRight className="w-4 h-4" />)}
+        <Badge variant="default" className="ml-auto">{project.components.length} {t('builder.placed')}</Badge>
       </div>
 
       <div className="relative flex-1 flex min-h-0 flex-col lg:flex-row">
@@ -235,9 +237,9 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
 
       <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-t border-base-700 bg-base-900">
         <Button size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setMobilePanel('library')}>
-          Add hardware
+          {t('builder.addComponent')}
         </Button>
-        <span className="text-2xs text-base-400 ml-auto">Tap a node to edit</span>
+        <span className="text-2xs text-base-400 ml-auto">{t('builder.tapNodeToEdit')}</span>
       </div>
 
       <ProjectSummary

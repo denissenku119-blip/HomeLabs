@@ -24,9 +24,11 @@ import { Badge } from '@/components/ui/Badge';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { NetworkTopology } from '@/components/NetworkTopology';
+import { useI18n } from '@/i18n/I18nContext';
 
 /* ---------- Public Header ---------- */
 function PublicHeader() {
+  const { t } = useI18n();
   return (
     <header className="sticky top-0 z-40 bg-base-950/80 backdrop-blur-md border-b border-base-800">
       <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
@@ -43,17 +45,17 @@ function PublicHeader() {
             to="/explore"
             className="px-3 py-2 text-sm font-medium text-base-200 hover:text-base-50 transition-colors"
           >
-            Explore
+            {t('landing.explore')}
           </Link>
           <Link
             to="/about"
             className="px-3 py-2 text-sm font-medium text-base-200 hover:text-base-50 transition-colors"
           >
-            About
+            {t('landing.about')}
           </Link>
           <Link to="/app">
             <Button size="sm" className="ml-1">
-              Launch App
+              {t('landing.launchApp')}
             </Button>
           </Link>
         </nav>
@@ -64,6 +66,7 @@ function PublicHeader() {
 
 /* ---------- Hero ---------- */
 function Hero() {
+  const { t } = useI18n();
   return (
     <section className="relative overflow-hidden border-b border-base-800">
       <div className="absolute inset-0 grid-bg opacity-60" />
@@ -72,26 +75,25 @@ function Hero() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div className="flex flex-col gap-6 animate-fade-in">
             <span className="text-2xs font-semibold text-accent uppercase tracking-wider">
-              Homelab Planning &amp; Intelligence
+              {t('landing.homelabPlanning')}
             </span>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-base-50 leading-tight text-balance">
-              Design your HomeLab
+              {t('landing.designYourHomelab')}
               <br />
-              <span className="text-accent">before you buy it.</span>
+              <span className="text-accent">{t('landing.beforeYouBuyIt')}</span>
             </h1>
             <p className="text-base sm:text-lg text-base-200 max-w-xl leading-relaxed">
-              Plan your hardware, network, storage, power and budget in one visual
-              workspace — then turn your design into a professional HomeLab blueprint.
+              {t('landing.heroDescription')}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <Link to="/app/new">
-                <Button size="lg" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                  Start Building Free
+                <Button size="lg" rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />}>
+                  {t('landing.startBuildingFree')}
                 </Button>
               </Link>
               <Link to="/explore">
                 <Button size="lg" variant="secondary">
-                  Explore the Architect
+                  {t('landing.exploreTheArchitect')}
                 </Button>
               </Link>
             </div>

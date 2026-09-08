@@ -9,13 +9,14 @@ import {
   Server,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/i18n/I18nContext';
 
 const navItems = [
-  { to: '/app', label: 'Overview', icon: LayoutGrid, end: true },
-  { to: '/app/projects', label: 'My Projects', icon: FolderKanban },
-  { to: '/app/new', label: 'New Project', icon: Plus },
-  { to: '/explore', label: 'Explore', icon: Compass },
-  { to: '/app/settings', label: 'Settings', icon: Settings },
+  { to: '/app', key: 'navigation.overview', icon: LayoutGrid, end: true },
+  { to: '/app/projects', key: 'navigation.myProjects', icon: FolderKanban },
+  { to: '/app/new', key: 'navigation.newProject', icon: Plus },
+  { to: '/explore', key: 'navigation.explore', icon: Compass },
+  { to: '/app/settings', key: 'navigation.settings', icon: Settings },
 ];
 
 interface SidebarProps {
@@ -23,6 +24,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onNavigate }: SidebarProps) {
+  const { t } = useI18n();
+
   return (
     <div className="flex flex-col h-full bg-base-900 border-r border-base-700 w-60">
       {/* Logo */}
@@ -62,7 +65,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                   }
                 >
                   <Icon className="w-4.5 h-4.5 flex-shrink-0" />
-                  {item.label}
+                  {t(item.key)}
                 </NavLink>
               </li>
             );
@@ -78,7 +81,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg text-base-300 hover:text-base-50 hover:bg-base-800 transition-colors"
         >
           <HelpCircle className="w-4.5 h-4.5 flex-shrink-0" />
-          Help
+          {t('navigation.help')}
         </NavLink>
         <div className="px-3 mt-3 text-2xs text-base-400 font-mono">
           v0.1.0-alpha

@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { I18nProvider, useI18n } from '@/i18n/I18nContext';
+import { LanguageOnboarding } from '@/pages/LanguageOnboarding';
 import { LandingPage } from '@/pages/LandingPage';
 import { ExplorePage } from '@/pages/ExplorePage';
 import { AboutPage } from '@/pages/AboutPage';
@@ -9,7 +11,13 @@ import { ProjectWorkspacePage } from '@/pages/app/ProjectWorkspacePage';
 import { ReportPage } from '@/pages/app/ReportPage';
 import { SettingsPage } from '@/pages/app/SettingsPage';
 
-function App() {
+function AppRoutes() {
+  const { hasOnboarded } = useI18n();
+
+  if (!hasOnboarded) {
+    return <LanguageOnboarding />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>
@@ -30,6 +38,14 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <AppRoutes />
+    </I18nProvider>
   );
 }
 
