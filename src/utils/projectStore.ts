@@ -112,6 +112,8 @@ export function createProject(input: CreateProjectInput): Project {
     connections: [],
     createdAt: now,
     updatedAt: now,
+    version: 1,
+    syncStatus: 'local',
   };
 }
 
@@ -214,6 +216,8 @@ function normalizeProject(raw: unknown): Project | null {
     connections,
     createdAt: String(obj.createdAt ?? new Date().toISOString()),
     updatedAt: String(obj.updatedAt ?? new Date().toISOString()),
+    version: typeof obj.version === 'number' ? obj.version : 1,
+    syncStatus: (obj.syncStatus as Project['syncStatus']) ?? 'local',
   };
 }
 

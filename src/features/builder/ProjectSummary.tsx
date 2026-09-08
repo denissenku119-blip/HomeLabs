@@ -8,7 +8,7 @@ import { calculateProjectMetrics } from '@/features/calculations/calculationEngi
 import type { ProjectMetrics } from '@/features/calculations/types';
 import { CATEGORY_LABELS } from '@/features/calculations/costCalculations';
 import { formatCost, formatPower, formatStorage, formatNetwork } from '@/utils/calculations';
-import { CURRENCY_SYMBOLS } from '@/data/constants';
+import { getCurrencySymbol } from '@/data/currencies';
 import { cn } from '@/lib/utils';
 
 interface ProjectSummaryProps {
@@ -42,6 +42,8 @@ export function ProjectSummary({
         connections,
         createdAt: '',
         updatedAt: '',
+        version: 1,
+        syncStatus: 'local',
       },
       { electricityCostPerKwh }
     ),
@@ -380,7 +382,7 @@ function PowerDetail({ metrics }: { metrics: ProjectMetrics }) {
 
 function EnergyDetail({ metrics, currency }: { metrics: ProjectMetrics; currency: Currency }) {
   const { energy } = metrics;
-  const symbol = CURRENCY_SYMBOLS[currency] ?? '$';
+  const symbol = getCurrencySymbol(currency);
 
   return (
     <div>

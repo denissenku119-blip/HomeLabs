@@ -12,7 +12,7 @@ export function TopBar({ projectName, children }: TopBarProps) {
 
   return (
     <>
-      <header className="flex items-center justify-between h-14 px-4 sm:px-6 bg-base-900 border-b border-base-700 flex-shrink-0 z-30">
+      <header className="flex items-center justify-between h-14 px-4 sm:px-6 bg-base-900 border-b border-base-700 flex-shrink-0 z-30 safe-top">
         <div className="flex items-center gap-3">
           {/* Mobile menu button */}
           <button

@@ -10,8 +10,10 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { mockProjects } from '@/data/mockData';
 import { loadAllProjects } from '@/utils/projectStore';
 import { calculateAnalysis } from '@/utils/calculations';
+import { useI18n } from '@/i18n/I18nContext';
 
 export function ProjectsPage() {
+  const { t } = useI18n();
   const savedProjects = useMemo(() => loadAllProjects(), []);
   const projects = [...savedProjects, ...mockProjects];
 
@@ -19,12 +21,12 @@ export function ProjectsPage() {
     <AppShell>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <SectionHeader
-          title="My Projects"
-          description="All your HomeLab designs in one place."
+          title={t('projects.title')}
+          description={t('projects.description')}
           action={
             <Link to="/app/new">
               <Button leftIcon={<Plus className="w-4 h-4" />}>
-                New HomeLab
+                {t('projects.newHomelab')}
               </Button>
             </Link>
           }
@@ -48,12 +50,12 @@ export function ProjectsPage() {
             <Card>
               <EmptyState
                 icon={<FolderOpen className="w-8 h-8" />}
-                title="No projects yet"
-                description="Create your first HomeLab project to start designing your infrastructure."
+                title={t('projects.noProjectsYet')}
+                description={t('projects.createFirstDescription')}
                 action={
                   <Link to="/app/new">
                     <Button leftIcon={<Plus className="w-4 h-4" />}>
-                      Create your first project
+                      {t('projects.createFirstProject')}
                     </Button>
                   </Link>
                 }

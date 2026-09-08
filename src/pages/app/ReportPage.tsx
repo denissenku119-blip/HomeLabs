@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Printer, Cpu, HardDrive, Network, Zap, Server, Box,
+  ArrowLeft, Printer, Share2, Cpu, HardDrive, Network, Zap, Server, Box,
   CheckCircle2, AlertTriangle, Info, XCircle, Lightbulb, Gauge,
   DollarSign, TrendingUp, Layers, FileText,
 } from 'lucide-react';
@@ -12,8 +12,12 @@ import { analyzeArchitecture } from '@/features/analysis/analysisEngine';
 import { buildArchitectureReport } from '@/features/report/reportTypes';
 import type { ArchitectureReport } from '@/features/report/reportTypes';
 import { formatCost, formatPower, formatStorage, formatNetwork } from '@/utils/calculations';
-import { CATEGORY_ICONS, CURRENCY_SYMBOLS, CONNECTION_TYPE_COLORS, CONNECTION_TYPE_LABELS } from '@/data/constants';
+import { CATEGORY_ICONS, CONNECTION_TYPE_COLORS, CONNECTION_TYPE_LABELS } from '@/data/constants';
+import { getCurrencySymbol } from '@/data/currencies';
 import { cn } from '@/lib/utils';
+import { shareContent } from '@/services/share.service';
+import { useI18n } from '@/i18n/I18nContext';
+import { formatDateLocale, formatCostLocale } from '@/i18n/formatters';
 
 const SEVERITY_ICONS = {
   good: CheckCircle2,
@@ -30,31 +34,32 @@ const SEVERITY_COLORS = {
 };
 
 const SEVERITY_LABELS = {
-  good: 'GOOD',
-  warning: 'WARNING',
-  critical: 'CRITICAL',
-  info: 'INFO',
+  good: 'severity.good',
+  warning: 'severity.warning',
+  critical: 'severity.critical',
+  info: 'severity.info',
 };
 
 const SECTIONS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'blueprint', label: 'Blueprint' },
-  { id: 'hardware', label: 'Hardware' },
-  { id: 'cost', label: 'Cost' },
-  { id: 'power', label: 'Power' },
-  { id: 'storage', label: 'Storage' },
-  { id: 'network', label: 'Network' },
-  { id: 'health', label: 'Health' },
-  { id: 'findings', label: 'Findings' },
-  { id: 'recommendations', label: 'Recommendations' },
-  { id: 'completeness', label: 'Data Quality' },
-  { id: 'expansion', label: 'Expansion' },
-  { id: 'notes', label: 'Notes' },
+  { id: 'overview', key: 'report.overview' },
+  { id: 'blueprint', key: 'report.blueprint' },
+  { id: 'hardware', key: 'report.hardware' },
+  { id: 'cost', key: 'report.cost' },
+  { id: 'power', key: 'report.power' },
+  { id: 'storage', key: 'report.storage' },
+  { id: 'network', key: 'report.network' },
+  { id: 'health', key: 'report.health' },
+  { id: 'findings', key: 'report.findings' },
+  { id: 'recommendations', key: 'report.recommendations' },
+  { id: 'completeness', key: 'report.completeness' },
+  { id: 'expansion', key: 'report.expansion' },
+  { id: 'notes', key: 'report.notes' },
 ];
 
 export function ReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, locale } = useI18n();
   const [activeSection, setActiveSection] = useState('overview');
 
   const report = useMemo<ArchitectureReport | null>(() => {
@@ -87,16 +92,16 @@ export function ReportPage() {
       <div className="min-h-screen bg-base-950 flex items-center justify-center p-6">
         <div className="text-center max-w-md">
           <FileText className="w-12 h-12 text-base-600 mx-auto mb-4" />
-          <h1 className="text-lg font-semibold text-base-100 mb-2">Project not found</h1>
+          <h1 className="text-lg font-semibold text-base-100 mb-2">{t('report.projectNotFound')}</h1>
           <p className="text-sm text-base-400 mb-6">
-            The project you're looking for doesn't exist or has been deleted.
+            {t('report.projectNotFoundDescription')}
           </p>
           <Link
             to="/app/projects"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-accent text-base-950 hover:bg-accent-400 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Projects
+            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
+            {t('report.backToProjects')}
           </Link>
         </div>
       </div>
@@ -104,6 +109,13 @@ export function ReportPage() {
   }
 
   const handlePrint = () => window.print();
+
+  const handleShare = async () => {
+    await shareContent({
+      title: `${report.projectName} — Architecture Report`,
+      text: `HomeLab Architect report for ${report.projectName}: ${report.components.length} devices, health score ${report.health.score}/${report.health.maxScore}.`,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-base-950">
@@ -114,17 +126,25 @@ export function ReportPage() {
           className="flex items-center gap-1.5 text-xs text-base-300 hover:text-base-100 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Back to Builder</span>
+          <span className="hidden sm:inline">{t('report.backToBuilder')}</span>
         </button>
         <div className="flex-1" />
         <button
           onClick={handlePrint}
           className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-accent text-base-950 hover:bg-accent-400 transition-colors"
-          aria-label="Print report"
+          aria-label={t('report.printReport')}
         >
           <Printer className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Print Report</span>
-          <span className="sm:hidden">Print</span>
+          <span className="hidden sm:inline">{t('report.printReport')}</span>
+          <span className="sm:hidden">{t('report.print')}</span>
+        </button>
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-base-700 text-base-200 hover:text-base-50 hover:bg-base-800 transition-colors"
+          aria-label="Share report"
+        >
+          <Share2 className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Share</span>
         </button>
       </div>
 
@@ -145,7 +165,7 @@ export function ReportPage() {
                   : 'text-base-400 hover:text-base-200'
               )}
             >
-              {section.label}
+              {t(section.key)}
             </button>
           ))}
         </div>
@@ -153,65 +173,65 @@ export function ReportPage() {
 
       {/* Report content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-20">
-        <ReportHeader report={report} />
+        <ReportHeader report={report} t={t} locale={locale} />
         <div className="h-px bg-base-700 my-8" />
 
-        <Section id="overview" title="Executive Summary">
+        <Section id="overview" title={t('report.executiveSummary')}>
           <ExecutiveSummary report={report} />
         </Section>
 
-        <Section id="blueprint" title="Architecture Blueprint">
+        <Section id="blueprint" title={t('report.architectureBlueprint')}>
           <ReportBlueprint components={report.components} connections={report.connections} />
         </Section>
 
-        <Section id="hardware" title="Hardware Inventory">
+        <Section id="hardware" title={t('report.hardwareInventory')}>
           <ReportHardware report={report} />
         </Section>
 
-        <Section id="cost" title="Cost Analysis">
+        <Section id="cost" title={t('report.costAnalysis')}>
           <ReportCost report={report} />
         </Section>
 
-        <Section id="power" title="Power & Electricity">
+        <Section id="power" title={t('report.powerElectricity')}>
           <ReportPower report={report} />
         </Section>
 
-        <Section id="storage" title="Storage">
+        <Section id="storage" title={t('report.storageAnalysis')}>
           <ReportStorage report={report} />
         </Section>
 
-        <Section id="network" title="Network Architecture">
+        <Section id="network" title={t('report.networkArchitecture')}>
           <ReportNetwork report={report} />
         </Section>
 
-        <Section id="health" title="Architecture Health">
+        <Section id="health" title={t('report.architectureHealth')}>
           <ReportHealth report={report} />
         </Section>
 
-        <Section id="findings" title="Findings">
-          <ReportFindings report={report} />
+        <Section id="findings" title={t('report.findings')}>
+          <ReportFindings report={report} t={t} />
         </Section>
 
-        <Section id="recommendations" title="Engineering Recommendations">
+        <Section id="recommendations" title={t('report.engineeringRecommendations')}>
           <ReportRecommendations report={report} />
         </Section>
 
-        <Section id="completeness" title="Data Completeness">
+        <Section id="completeness" title={t('report.dataCompleteness')}>
           <ReportCompleteness report={report} />
         </Section>
 
-        <Section id="expansion" title="Expansion Outlook">
+        <Section id="expansion" title={t('report.expansionOutlook')}>
           <ReportExpansion report={report} />
         </Section>
 
-        <Section id="notes" title="Project Notes">
+        <Section id="notes" title={t('report.projectNotes')}>
           <ReportNotes report={report} />
         </Section>
 
         {/* Report footer */}
         <div className="mt-12 pt-6 border-t border-base-700">
           <p className="text-2xs text-base-500 text-center">
-            Generated by HomeLab Architect on {report.generatedDate}. All values are estimates based on configured project data.
+            {t('report.generatedBy')} {formatDateLocale(new Date(), locale)}. {t('report.estimatesDisclaimer')}
           </p>
         </div>
       </div>
@@ -231,7 +251,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
   );
 }
 
-function ReportHeader({ report }: { report: ArchitectureReport }) {
+function ReportHeader({ report, t, locale }: { report: ArchitectureReport; t: (k: string) => string; locale: string }) {
   const scoreColor = report.health.score >= 70 ? 'text-success-400' : report.health.score >= 50 ? 'text-warning-400' : 'text-danger-400';
   const scoreBg = report.health.score >= 70 ? 'bg-success-500' : report.health.score >= 50 ? 'bg-warning-500' : 'bg-danger-500';
   return (
@@ -240,16 +260,16 @@ function ReportHeader({ report }: { report: ArchitectureReport }) {
         <span className="flex items-center justify-center w-8 h-8 rounded-md bg-accent/15 text-accent">
           <Cpu className="w-4 h-4" />
         </span>
-        <span className="text-xs font-bold text-base-300 uppercase tracking-widest">HomeLab Architect</span>
+        <span className="text-xs font-bold text-base-300 uppercase tracking-widest">{t('report.homeLabArchitect')}</span>
       </div>
 
       <h1 className="text-2xl sm:text-3xl font-bold text-base-50 mb-1">{report.projectName}</h1>
-      <p className="text-sm text-base-400 mb-6">HomeLab Architecture Report</p>
+      <p className="text-sm text-base-400 mb-6">{t('report.architectureReport')}</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <HeaderStat
           icon={<Gauge className="w-3.5 h-3.5" />}
-          label="Architecture Health"
+          label={t('report.architectureHealthLabel')}
           value={report.health.score > 0 ? `${report.health.score} / ${report.health.maxScore}` : '—'}
           valueClass={report.health.score > 0 ? scoreColor : ''}
         >
@@ -261,18 +281,18 @@ function ReportHeader({ report }: { report: ArchitectureReport }) {
         </HeaderStat>
         <HeaderStat
           icon={<DollarSign className="w-3.5 h-3.5" />}
-          label="Est. Investment"
-          value={report.cost.totalKnownCost > 0 ? formatCost(report.cost.totalKnownCost, report.currency) : 'Unknown'}
+          label={t('report.estimatedInvestment')}
+          value={report.cost.totalKnownCost > 0 ? formatCostLocale(report.cost.totalKnownCost, report.currency, locale) : t('common.unknown')}
         />
         <HeaderStat
           icon={<Server className="w-3.5 h-3.5" />}
-          label="Devices"
+          label={t('report.devices')}
           value={String(report.components.length)}
         />
         <HeaderStat
           icon={<FileText className="w-3.5 h-3.5" />}
-          label="Generated"
-          value={report.generatedDate}
+          label={t('report.generated')}
+          value={formatDateLocale(new Date(), locale)}
         />
       </div>
     </div>
@@ -554,7 +574,7 @@ function ReportPower({ report }: { report: ArchitectureReport }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-2">
             <Row label="Annual consumption" value={power.hasPowerData ? `${Math.round(power.annualKwh).toLocaleString()} kWh` : 'Unknown'} />
-            <Row label="Electricity rate" value={`${CURRENCY_SYMBOLS[report.currency] ?? '$'}${power.electricityCostPerKwh.toFixed(2)}/kWh`} />
+            <Row label="Electricity rate" value={`${getCurrencySymbol(report.currency)}${power.electricityCostPerKwh.toFixed(2)}/kWh`} />
             <Row label="Monthly cost" value={power.hasPowerData ? formatCost(power.monthlyCost, report.currency) : 'Unknown'} valueClass="text-accent" />
             <Row label="Annual cost" value={power.hasPowerData ? formatCost(power.annualCost, report.currency) : 'Unknown'} valueClass="text-accent" />
           </div>
@@ -713,7 +733,7 @@ function ReportHealth({ report }: { report: ArchitectureReport }) {
   );
 }
 
-function ReportFindings({ report }: { report: ArchitectureReport }) {
+function ReportFindings({ report, t }: { report: ArchitectureReport; t: (k: string) => string }) {
   if (report.findings.length === 0) {
     return <EmptySection text="No findings to report." />;
   }
@@ -738,7 +758,7 @@ function ReportFindings({ report }: { report: ArchitectureReport }) {
         return (
           <div key={sev}>
             <h3 className={cn('text-2xs font-bold uppercase tracking-wider mb-2', SEVERITY_COLORS[sev].text)}>
-              {SEVERITY_LABELS[sev]} ({items.length})
+              {t(SEVERITY_LABELS[sev])} ({items.length})
             </h3>
             <div className="flex flex-col gap-2">
               {items.map((f) => {

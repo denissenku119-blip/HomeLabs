@@ -10,6 +10,7 @@ import {
   getSmartPlacement,
 } from '@/utils/projectStore';
 import { getHardwareById } from '@/data/hardware';
+import { useAppLifecycle } from '@/hooks/useAppLifecycle';
 import type { CreateProjectInput, CustomHardwareInput } from '@/types';
 
 export interface ProjectState {
@@ -71,6 +72,15 @@ export function useProjectState(
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [project]);
+
+  useAppLifecycle(() => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    saveProject(project);
+    setSaved(true);
+  });
 
   const addHardware = useCallback(
     (hw: HardwareDefinition, x?: number, y?: number) => {

@@ -1,5 +1,5 @@
 import type { ProjectComponent, Connection, AnalysisResult } from '@/types';
-import { CURRENCY_SYMBOLS } from '@/data/constants';
+import { formatCurrency } from '@/data/currencies';
 import { calculateCost } from '@/features/calculations/costCalculations';
 import { calculatePower } from '@/features/calculations/powerCalculations';
 import { calculateStorage } from '@/features/calculations/storageCalculations';
@@ -25,9 +25,7 @@ export function calculateAnalysis(
 }
 
 export function formatCost(amount: number, currency: string = 'USD'): string {
-  if (amount === 0) return '—';
-  const symbol = CURRENCY_SYMBOLS[currency as keyof typeof CURRENCY_SYMBOLS] ?? '$';
-  return `${symbol}${amount.toLocaleString('en-US')}`;
+  return formatCurrency(amount, currency);
 }
 
 export function formatPower(watts: number): string {

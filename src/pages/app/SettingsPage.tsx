@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
+import { Save, Globe, ChevronRight } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-
-const currencyOptions = [
-  { value: 'USD', label: 'USD — US Dollar' },
-  { value: 'EUR', label: 'EUR — Euro' },
-  { value: 'GBP', label: 'GBP — British Pound' },
-];
+import { CurrencySelect } from '@/components/CurrencySelect';
+import { LanguagePicker } from '@/components/LanguagePicker';
+import { APP_VERSION } from '@/config/app';
+import { useI18n } from '@/i18n/I18nContext';
+import { getLanguage } from '@/i18n/languages';
 
 const voltageOptions = [
   { value: '120', label: '120V (North America)' },
@@ -45,10 +44,14 @@ function saveSettings(settings: AppSettings): void {
 }
 
 export function SettingsPage() {
+  const { t, langId } = useI18n();
   const [currency, setCurrency] = useState('USD');
   const [voltage, setVoltage] = useState('120');
   const [electricityRate, setElectricityRate] = useState('0.15');
   const [saved, setSaved] = useState(false);
+  const [langPickerOpen, setLangPickerOpen] = useState(false);
+
+  const currentLang = getLanguage(langId);
 
   useEffect(() => {
     const s = loadSettings();
@@ -75,65 +78,93 @@ export function SettingsPage() {
 
   return (
     <AppShell>
+      <LanguagePicker open={langPickerOpen} onClose={() => setLangPickerOpen(false)} />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <SectionHeader
-          title="Settings"
-          description="Configure your HomeLab Architect preferences."
+          title={t('settings.title')}
+          description={t('settings.description')}
         />
 
         <div className="mt-8 flex flex-col gap-6">
+          {/* Language */}
           <Card>
-            <h3 className="text-sm font-semibold text-base-100 mb-4">Preferences</h3>
+            <h3 className="text-sm font-semibold text-base-100 mb-4 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-accent" />
+              {t('settings.language')}
+            </h3>
+            <button
+              onClick={() => setLangPickerOpen(true)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-base-850 border border-base-700 hover:border-base-600 transition-colors text-left"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-base-100">
+                  {currentLang?.nativeName ?? 'English'}
+                </p>
+                <p className="text-2xs text-base-400">
+                  {currentLang?.englishName}
+                </p>
+              </div>
+              <span className="text-2xs text-accent font-medium">
+                {t('settings.changeLanguage')}
+              </span>
+              <ChevronRight className="w-4 h-4 text-base-400 rtl:rotate-180" />
+            </button>
+          </Card>
+
+          {/* Preferences */}
+          <Card>
+            <h3 className="text-sm font-semibold text-base-100 mb-4">{t('settings.preferences')}</h3>
             <div className="flex flex-col gap-5">
-              <Select
-                label="Default currency"
-                options={currencyOptions}
+              <CurrencySelect
+                label={t('settings.defaultCurrency')}
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                helperText="Used for all new projects unless overridden."
+                onChange={setCurrency}
+                helperText={t('settings.defaultCurrencyHelper')}
               />
               <Select
-                label="Default voltage"
+                label={t('settings.defaultVoltage')}
                 options={voltageOptions}
                 value={voltage}
                 onChange={(e) => setVoltage(e.target.value)}
-                helperText="Used for power cost calculations."
+                helperText={t('settings.defaultVoltageHelper')}
               />
               <Input
-                label="Electricity rate (per kWh)"
+                label={t('settings.electricityRate')}
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0.15"
                 value={electricityRate}
                 onChange={(e) => setElectricityRate(e.target.value)}
-                helperText="Cost per kWh, used to estimate ongoing power costs. This is a configurable assumption — enter your local electricity price."
+                helperText={t('settings.electricityRateHelper')}
               />
             </div>
           </Card>
 
           <Card>
-            <h3 className="text-sm font-semibold text-base-100 mb-4">Account</h3>
+            <h3 className="text-sm font-semibold text-base-100 mb-4">{t('settings.account')}</h3>
             <p className="text-sm text-base-300">
-              Account management and authentication will be available in a future update.
+              {t('settings.accountDescription')}
+            </p>
+            <p className="text-2xs text-base-400 mt-3 font-mono">
+              v{APP_VERSION}
             </p>
           </Card>
 
           <Card>
-            <h3 className="text-sm font-semibold text-base-100 mb-4">Data</h3>
+            <h3 className="text-sm font-semibold text-base-100 mb-4">{t('settings.data')}</h3>
             <p className="text-sm text-base-300">
-              Cloud project sync and history will be available in a future update. Your
-              projects are currently stored locally.
+              {t('settings.dataDescription')}
             </p>
           </Card>
 
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={handleReset}>Reset</Button>
+            <Button variant="ghost" onClick={handleReset}>{t('common.reset')}</Button>
             <Button
               leftIcon={<Save className="w-4 h-4" />}
               onClick={handleSave}
             >
-              {saved ? 'Saved' : 'Save Changes'}
+              {saved ? t('common.saved') : t('settings.saveChanges')}
             </Button>
           </div>
         </div>

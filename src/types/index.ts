@@ -16,7 +16,7 @@ export type ConnectionType =
   | 'power'
   | 'other';
 
-export type Currency = 'USD' | 'EUR' | 'GBP';
+export type Currency = string;
 
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 
@@ -129,6 +129,8 @@ export interface Connection {
   label?: string;
 }
 
+export type SyncStatus = 'local' | 'pending' | 'synced' | 'conflict';
+
 export interface Project {
   id: string;
   name: string;
@@ -142,6 +144,8 @@ export interface Project {
   connections: Connection[];
   createdAt: string;
   updatedAt: string;
+  version: number;
+  syncStatus?: SyncStatus;
 }
 
 export interface AnalysisResult {

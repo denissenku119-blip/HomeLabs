@@ -10,7 +10,7 @@ interface AppShellProps {
 
 export function AppShell({ projectName, children, topBarActions }: AppShellProps) {
   return (
-    <div className="flex h-screen overflow-hidden bg-base-950">
+    <div className="flex h-screen overflow-hidden bg-base-950 safe-top">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-shrink-0">
         <Sidebar />
@@ -19,7 +19,7 @@ export function AppShell({ projectName, children, topBarActions }: AppShellProps
       {/* Main content area */}
       <div className="flex flex-col flex-1 min-w-0">
         <TopBar projectName={projectName}>{topBarActions}</TopBar>
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch">{children}</main>
       </div>
     </div>
   );

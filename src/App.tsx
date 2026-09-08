@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { I18nProvider, useI18n } from '@/i18n/I18nContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useAndroidBackButton } from '@/hooks/useAndroidBackButton';
 import { LanguageOnboarding } from '@/pages/LanguageOnboarding';
 import { LandingPage } from '@/pages/LandingPage';
 import { ExplorePage } from '@/pages/ExplorePage';
@@ -13,6 +15,7 @@ import { SettingsPage } from '@/pages/app/SettingsPage';
 
 function AppRoutes() {
   const { hasOnboarded } = useI18n();
+  useAndroidBackButton();
 
   if (!hasOnboarded) {
     return <LanguageOnboarding />;
@@ -43,9 +46,11 @@ function AppRoutes() {
 
 function App() {
   return (
-    <I18nProvider>
-      <AppRoutes />
-    </I18nProvider>
+    <ErrorBoundary>
+      <I18nProvider>
+        <AppRoutes />
+      </I18nProvider>
+    </ErrorBoundary>
   );
 }
 

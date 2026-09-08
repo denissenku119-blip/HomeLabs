@@ -37,6 +37,8 @@ function buildProject(
     connections: [],
     createdAt: now,
     updatedAt: now,
+    version: 1,
+    syncStatus: 'local',
   };
 }
 

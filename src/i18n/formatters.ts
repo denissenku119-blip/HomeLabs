@@ -1,28 +1,11 @@
-import type { Currency } from '@/types';
-
-const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-};
+import { formatCurrency, getCurrencySymbol as getCurrencySymbolFromRegistry } from '@/data/currencies';
 
 export function formatCostLocale(
   amount: number,
-  currency: Currency,
+  currency: string,
   locale: string = 'en-US'
 ): string {
-  if (amount === 0) return '—';
-  try {
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    const symbol = CURRENCY_SYMBOLS[currency] ?? '$';
-    return `${symbol}${amount.toLocaleString(locale)}`;
-  }
+  return formatCurrency(amount, currency, locale);
 }
 
 export function formatNumberLocale(
@@ -56,6 +39,6 @@ export function formatDateLocale(date: Date, locale: string = 'en-US'): string {
   }
 }
 
-export function getCurrencySymbol(currency: Currency): string {
-  return CURRENCY_SYMBOLS[currency] ?? '$';
+export function getCurrencySymbol(currency: string): string {
+  return getCurrencySymbolFromRegistry(currency);
 }

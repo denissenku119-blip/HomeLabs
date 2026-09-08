@@ -1,7 +1,6 @@
 import type {
   ComponentCategory,
   ConnectionType,
-  Currency,
   ExperienceLevel,
   PrimaryGoal,
 } from '@/types';
@@ -74,11 +73,8 @@ export const CONNECTION_TYPE_ICONS: Record<ConnectionType, React.ElementType> = 
   other: Link2,
 };
 
-export const CURRENCY_SYMBOLS: Record<Currency, string> = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-};
+export { getCurrencySymbol as CURRENCY_SYMBOLS_FN } from '@/data/currencies';
+export { CURRENCIES, getCurrency, getCurrencySymbol, getCurrencyDecimals, formatCurrency, isValidCurrency } from '@/data/currencies';
 
 export const GOAL_LABELS: Record<PrimaryGoal, string> = {
   'self-hosting': 'Self-hosting',

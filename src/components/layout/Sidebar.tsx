@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/i18n/I18nContext';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { APP_VERSION } from '@/config/app';
 
 const navItems = [
   { to: '/app', key: 'navigation.overview', icon: LayoutGrid, end: true },
@@ -83,8 +85,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           <HelpCircle className="w-4.5 h-4.5 flex-shrink-0" />
           {t('navigation.help')}
         </NavLink>
-        <div className="px-3 mt-3 text-2xs text-base-400 font-mono">
-          v0.1.0-alpha
+        <div className="px-3 mt-3 flex items-center gap-2 text-2xs text-base-400 font-mono">
+          <OfflineIndicator />
+          v{APP_VERSION}
         </div>
       </div>
     </div>
