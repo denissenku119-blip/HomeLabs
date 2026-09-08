@@ -1,11 +1,11 @@
 import type {
-  ComponentDefinition,
+  HardwareDefinition,
   ProjectComponent,
   Connection,
   Project,
   ConnectionType,
   CreateProjectInput,
-  ProjectComponent as PC,
+  CustomHardwareInput,
 } from '@/types';
 import { STORAGE_KEY_PREFIX } from '@/data/constants';
 
@@ -16,16 +16,69 @@ export function generateInstanceId(): string {
   return `inst-${Date.now()}-${instanceCounter}`;
 }
 
-export function createProjectComponent(
-  def: ComponentDefinition,
+export function createProjectComponentFromHardware(
+  hw: HardwareDefinition,
   x: number = 0,
   y: number = 0
 ): ProjectComponent {
   return {
-    ...def,
     instanceId: generateInstanceId(),
+    hardwareDefinitionId: hw.id,
     x,
     y,
+    name: hw.name,
+    manufacturer: hw.manufacturer,
+    model: hw.model,
+    category: hw.category,
+    subcategory: hw.subcategory,
+    description: hw.description,
+    price: hw.typicalPrice,
+    currency: hw.currency,
+    powerWatts: hw.powerWatts,
+    idlePowerWatts: hw.idlePowerWatts,
+    maxPowerWatts: hw.maxPowerWatts,
+    storageTB: hw.storageTB,
+    driveBays: hw.driveBays,
+    networkPorts: hw.networkPorts,
+    networkSpeedGbps: hw.networkSpeedGbps,
+    cpuCores: hw.cpuCores,
+    ramGB: hw.ramGB,
+    expandableRam: hw.expandableRam,
+    formFactor: hw.formFactor,
+    virtualizationSupport: hw.virtualizationSupport,
+    useCases: hw.useCases,
+    notes: hw.notes,
+    specSourceType: hw.specSourceType,
+    hasOverrides: false,
+  };
+}
+
+export function createCustomHardwareComponent(
+  input: CustomHardwareInput,
+  x: number = 0,
+  y: number = 0
+): ProjectComponent {
+  const id = `custom-${Date.now()}`;
+  return {
+    instanceId: generateInstanceId(),
+    hardwareDefinitionId: id,
+    x,
+    y,
+    name: input.name,
+    manufacturer: input.manufacturer,
+    model: input.model,
+    category: input.category,
+    description: `${input.manufacturer} ${input.model} — custom hardware`,
+    price: input.price,
+    currency: 'USD',
+    powerWatts: input.powerWatts,
+    storageTB: input.storageTB,
+    networkSpeedGbps: input.networkSpeedGbps,
+    formFactor: 'custom',
+    useCases: [],
+    notes: input.notes,
+    specSourceType: 'user',
+    hasOverrides: false,
   };
 }
 
@@ -71,7 +124,7 @@ export function saveProject(project: Project): void {
     localStorage.setItem(key, JSON.stringify(project));
     saveProjectId(project.id);
   } catch {
-    // Storage may be full or unavailable — fail silently
+    // Storage may be full or unavailable
   }
 }
 
@@ -124,13 +177,21 @@ export function loadAllProjects(): Project[] {
     .filter((p): p is Project => p !== null);
 }
 
+const COMPONENT_DEFAULTS = {
+  manufacturer: 'Generic',
+  formFactor: 'custom' as const,
+  useCases: [] as string[],
+  specSourceType: 'user' as const,
+  hasOverrides: false,
+};
+
 function normalizeProject(raw: unknown): Project | null {
   if (!raw || typeof raw !== 'object') return null;
   const obj = raw as Record<string, unknown>;
   if (!obj.id || !obj.name) return null;
 
   const components = Array.isArray(obj.components)
-    ? (obj.components as unknown[]).filter(isValidComponent) as PC[]
+    ? (obj.components as unknown[]).filter(isValidComponent).map(normalizeComponent)
     : [];
 
   const validInstanceIds = new Set(components.map((c) => c.instanceId));
@@ -157,7 +218,41 @@ function normalizeProject(raw: unknown): Project | null {
 function isValidComponent(c: unknown): boolean {
   if (!c || typeof c !== 'object') return false;
   const obj = c as Record<string, unknown>;
-  return !!obj.instanceId && !!obj.id && typeof obj.x === 'number' && typeof obj.y === 'number';
+  return !!obj.instanceId && typeof obj.x === 'number' && typeof obj.y === 'number';
+}
+
+function normalizeComponent(c: unknown): ProjectComponent {
+  const obj = c as Record<string, unknown>;
+  return {
+    instanceId: String(obj.instanceId),
+    hardwareDefinitionId: String(obj.hardwareDefinitionId ?? obj.id ?? 'legacy'),
+    x: Number(obj.x) || 0,
+    y: Number(obj.y) || 0,
+    name: String(obj.name ?? 'Unknown'),
+    manufacturer: String(obj.manufacturer ?? COMPONENT_DEFAULTS.manufacturer),
+    model: String(obj.model ?? ''),
+    category: (obj.category as ProjectComponent['category']) ?? 'other',
+    subcategory: obj.subcategory ? String(obj.subcategory) : undefined,
+    description: String(obj.description ?? ''),
+    price: Number(obj.price) || 0,
+    currency: (obj.currency as ProjectComponent['currency']) ?? 'USD',
+    powerWatts: Number(obj.powerWatts) || 0,
+    idlePowerWatts: obj.idlePowerWatts != null ? Number(obj.idlePowerWatts) : undefined,
+    maxPowerWatts: obj.maxPowerWatts != null ? Number(obj.maxPowerWatts) : undefined,
+    storageTB: Number(obj.storageTB) || 0,
+    driveBays: obj.driveBays != null ? Number(obj.driveBays) : undefined,
+    networkPorts: obj.networkPorts != null ? Number(obj.networkPorts) : undefined,
+    networkSpeedGbps: Number(obj.networkSpeedGbps) || 0,
+    cpuCores: obj.cpuCores != null ? Number(obj.cpuCores) : undefined,
+    ramGB: obj.ramGB != null ? Number(obj.ramGB) : undefined,
+    expandableRam: obj.expandableRam != null ? Boolean(obj.expandableRam) : undefined,
+    formFactor: (obj.formFactor as ProjectComponent['formFactor']) ?? COMPONENT_DEFAULTS.formFactor,
+    virtualizationSupport: obj.virtualizationSupport != null ? Boolean(obj.virtualizationSupport) : undefined,
+    useCases: Array.isArray(obj.useCases) ? (obj.useCases as string[]) : COMPONENT_DEFAULTS.useCases,
+    notes: obj.notes ? String(obj.notes) : undefined,
+    specSourceType: (obj.specSourceType as ProjectComponent['specSourceType']) ?? COMPONENT_DEFAULTS.specSourceType,
+    hasOverrides: obj.hasOverrides != null ? Boolean(obj.hasOverrides) : COMPONENT_DEFAULTS.hasOverrides,
+  };
 }
 
 function isValidConnection(c: unknown, validIds: Set<string>): boolean {
@@ -170,4 +265,20 @@ function isValidConnection(c: unknown, validIds: Set<string>): boolean {
     validIds.has(String(obj.fromId)) &&
     validIds.has(String(obj.toId))
   );
+}
+
+export function getSmartPlacement(
+  existingCount: number,
+  canvasCenterX: number = 250,
+  canvasCenterY: number = 180
+): { x: number; y: number } {
+  if (existingCount === 0) {
+    return { x: canvasCenterX, y: canvasCenterY };
+  }
+  const angle = (existingCount * 0.8) % (Math.PI * 2);
+  const radius = 80 + Math.floor(existingCount / 6) * 60;
+  return {
+    x: canvasCenterX + Math.cos(angle) * radius - 70,
+    y: canvasCenterY + Math.sin(angle) * radius - 35,
+  };
 }

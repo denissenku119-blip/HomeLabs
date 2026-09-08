@@ -2,7 +2,7 @@ import { useRef, type PointerEvent as ReactPointerEvent, type KeyboardEvent } fr
 import { Cpu, HardDrive, Network, Zap, Server, Shield, Box, Trash2, Link2, Copy } from 'lucide-react';
 import type { ProjectComponent, ComponentCategory } from '@/types';
 import { cn } from '@/lib/utils';
-import { formatPower, formatStorage, formatCost } from '@/utils/calculations';
+import { formatPower, formatStorage, formatCost, formatNetwork } from '@/utils/calculations';
 
 const iconMap: Record<ComponentCategory, React.ElementType> = {
   compute: Cpu,
@@ -98,6 +98,15 @@ export function CanvasNode({
     }
   };
 
+  const badges: { label: string; priority: number }[] = [];
+  if (component.ramGB != null && component.ramGB > 0) badges.push({ label: `${component.ramGB}GB`, priority: 1 });
+  if (component.networkSpeedGbps > 0) badges.push({ label: formatNetwork(component.networkSpeedGbps), priority: 2 });
+  if (component.driveBays != null && component.driveBays > 0) badges.push({ label: `${component.driveBays}-Bay`, priority: 3 });
+  if (component.storageTB > 0 && component.driveBays == null) badges.push({ label: formatStorage(component.storageTB), priority: 4 });
+  if (component.powerWatts > 0) badges.push({ label: formatPower(component.powerWatts), priority: 5 });
+
+  const topBadges = badges.slice(0, 3);
+
   return (
     <div
       className={cn(
@@ -120,7 +129,6 @@ export function CanvasNode({
       role="button"
       aria-label={`${component.name} node. Use arrow keys to move. Delete to remove.`}
     >
-      {/* Header */}
       <div className="flex items-center gap-2 px-2.5 py-2 border-b border-base-700">
         <span
           className={cn(
@@ -134,22 +142,28 @@ export function CanvasNode({
           <p className="text-xs font-semibold text-base-50 truncate leading-tight">
             {component.name}
           </p>
-          {component.manufacturer && component.manufacturer !== 'Generic' && (
+          {component.manufacturer && component.manufacturer !== 'Generic' && component.manufacturer !== '—' && (
             <p className="text-2xs text-base-400 truncate leading-tight">
               {component.manufacturer}
             </p>
           )}
         </div>
+        {component.hasOverrides && (
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0"
+            title="Customized values"
+            aria-label="Has customized values"
+          />
+        )}
       </div>
 
-      {/* Stats */}
-      <div className="px-2.5 py-1.5 grid grid-cols-3 gap-1">
-        <Stat label="Cost" value={formatCost(component.price, component.currency)} />
-        <Stat label="Power" value={formatPower(component.powerWatts)} />
-        <Stat label="Storage" value={formatStorage(component.storageTB)} />
+      <div className="px-2.5 py-1.5 flex flex-wrap gap-1">
+        <NodeBadge label={formatCost(component.price, component.currency)} variant="cost" />
+        {topBadges.map((b) => (
+          <NodeBadge key={b.label} label={b.label} />
+        ))}
       </div>
 
-      {/* Hover actions */}
       <div className="absolute -top-3 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           className="flex items-center justify-center w-6 h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-accent hover:border-accent transition-colors"
@@ -189,7 +203,6 @@ export function CanvasNode({
         </button>
       </div>
 
-      {/* Connection ports */}
       <div
         className={cn(
           'absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 transition-colors',
@@ -206,13 +219,17 @@ export function CanvasNode({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function NodeBadge({ label, variant }: { label: string; variant?: 'cost' }) {
   return (
-    <div className="text-center">
-      <p className="text-2xs text-base-400 uppercase tracking-wide leading-tight">{label}</p>
-      <p className="text-2xs font-mono font-semibold text-base-100 leading-tight truncate">
-        {value}
-      </p>
-    </div>
+    <span
+      className={cn(
+        'inline-flex items-center px-1.5 py-0.5 text-2xs font-mono font-medium rounded',
+        variant === 'cost'
+          ? 'bg-accent/10 text-accent border border-accent/20'
+          : 'bg-base-800 text-base-200 border border-base-700'
+      )}
+    >
+      {label}
+    </span>
   );
 }

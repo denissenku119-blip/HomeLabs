@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Copy, Trash2, Link2, X, Cpu, DollarSign, Zap, HardDrive, Network, Tag, StickyNote } from 'lucide-react';
-import type { ProjectComponent, Connection, ConnectionType, Currency } from '@/types';
+import {
+  Copy, Trash2, Link2, X, Cpu, DollarSign, Zap, HardDrive, Network,
+  Tag, StickyNote, RotateCcw, Info, AlertTriangle,
+} from 'lucide-react';
+import type { ProjectComponent, Connection, ConnectionType, Currency, HardwareDefinition } from '@/types';
 import { CATEGORY_LABELS, CATEGORY_ICONS, CONNECTION_TYPE_LABELS, CONNECTION_TYPE_COLORS } from '@/data/constants';
+import { getHardwareById } from '@/data/hardware';
 import { formatCost, formatPower, formatStorage, formatNetwork, formatValue } from '@/utils/calculations';
+import { getComponentConnectionHints } from '@/utils/compatibility';
 import { cn } from '@/lib/utils';
 
 interface NodeDetailsPanelProps {
@@ -12,6 +17,7 @@ interface NodeDetailsPanelProps {
   connectingFromId: string | null;
   pendingConnectionType: ConnectionType;
   onUpdate: (instanceId: string, updates: Partial<ProjectComponent>) => void;
+  onResetToCatalog: (instanceId: string) => void;
   onDelete: (instanceId: string) => void;
   onDuplicate: (instanceId: string) => void;
   onStartConnecting: (instanceId: string) => void;
@@ -23,20 +29,9 @@ interface NodeDetailsPanelProps {
 }
 
 export function NodeDetailsPanel({
-  component,
-  connections,
-  allComponents,
-  connectingFromId,
-  pendingConnectionType,
-  onUpdate,
-  onDelete,
-  onDuplicate,
-  onStartConnecting,
-  onCancelConnecting,
-  onSetConnectionType,
-  onSelectNode,
-  onDeleteConnection,
-  onClose,
+  component, connections, allComponents, connectingFromId, pendingConnectionType,
+  onUpdate, onResetToCatalog, onDelete, onDuplicate, onStartConnecting,
+  onCancelConnecting, onSetConnectionType, onSelectNode, onDeleteConnection, onClose,
 }: NodeDetailsPanelProps) {
   if (!component) {
     return <OverviewPanel components={allComponents} />;
@@ -50,6 +45,7 @@ export function NodeDetailsPanel({
       connectingFromId={connectingFromId}
       pendingConnectionType={pendingConnectionType}
       onUpdate={onUpdate}
+      onResetToCatalog={onResetToCatalog}
       onDelete={onDelete}
       onDuplicate={onDuplicate}
       onStartConnecting={onStartConnecting}
@@ -76,7 +72,7 @@ function OverviewPanel({ components }: { components: ProjectComponent[] }) {
             <p className="text-xs text-base-400">
               No components placed yet.
               <br />
-              Add components to see an overview.
+              Add hardware to see an overview.
             </p>
           </div>
         ) : (
@@ -111,29 +107,19 @@ function OverviewPanel({ components }: { components: ProjectComponent[] }) {
 }
 
 function DetailsEditor({
-  component,
-  connections,
-  allComponents,
-  connectingFromId,
-  pendingConnectionType,
-  onUpdate,
-  onDelete,
-  onDuplicate,
-  onStartConnecting,
-  onCancelConnecting,
-  onSetConnectionType,
-  onSelectNode,
-  onDeleteConnection,
-  onClose,
+  component, connections, allComponents, connectingFromId, pendingConnectionType,
+  onUpdate, onResetToCatalog, onDelete, onDuplicate, onStartConnecting,
+  onCancelConnecting, onSetConnectionType, onSelectNode, onDeleteConnection, onClose,
 }: Omit<NodeDetailsPanelProps, 'component'> & { component: ProjectComponent }) {
   const Icon = CATEGORY_ICONS[component.category];
+  const catalogDef = getHardwareById(component.hardwareDefinitionId);
   const compConnections = connections.filter(
     (c) => c.fromId === component.instanceId || c.toId === component.instanceId
   );
+  const hints = getComponentConnectionHints(component, connections, allComponents);
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="px-3 py-2.5 border-b border-base-700 flex-shrink-0">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 min-w-0">
@@ -155,9 +141,7 @@ function DetailsEditor({
         </div>
       </div>
 
-      {/* Body */}
       <div className="flex-1 overflow-y-auto p-3">
-        {/* Quick stats */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           <QuickStat icon={<DollarSign className="w-3 h-3" />} label="Price" value={formatValue(component.price, (v) => formatCost(v, component.currency as Currency))} />
           <QuickStat icon={<Zap className="w-3 h-3" />} label="Power" value={formatValue(component.powerWatts, formatPower)} />
@@ -165,8 +149,18 @@ function DetailsEditor({
           <QuickStat icon={<Network className="w-3 h-3" />} label="Network" value={formatValue(component.networkSpeedGbps, formatNetwork)} />
         </div>
 
-        {/* Editable fields */}
-        <div className="flex flex-col gap-3">
+        {catalogDef && component.hasOverrides && (
+          <CatalogComparison component={component} catalogDef={catalogDef} onReset={() => onResetToCatalog(component.instanceId)} />
+        )}
+
+        {component.specSourceType === 'user' && (
+          <div className="mb-3 flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-base-850 border border-base-700">
+            <Tag className="w-3 h-3 text-base-400" />
+            <span className="text-2xs text-base-400">Custom hardware — user-entered values</span>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3 mt-3">
           <FieldRow icon={<Tag className="w-3 h-3" />} label="Name">
             <InlineInput
               value={component.name}
@@ -199,7 +193,7 @@ function DetailsEditor({
           </FieldRow>
 
           <div className="grid grid-cols-2 gap-2">
-            <FieldRow label="Price">
+            <FieldRow label="Price (USD)">
               <InlineInput
                 type="number"
                 value={String(component.price || '')}
@@ -233,6 +227,26 @@ function DetailsEditor({
                 placeholder="0"
               />
             </FieldRow>
+            {component.cpuCores != null && (
+              <FieldRow label="CPU cores">
+                <InlineInput
+                  type="number"
+                  value={String(component.cpuCores || '')}
+                  onChange={(v) => onUpdate(component.instanceId, { cpuCores: parseFloat(v) || 0 })}
+                  placeholder="0"
+                />
+              </FieldRow>
+            )}
+            {component.ramGB != null && (
+              <FieldRow label="RAM (GB)">
+                <InlineInput
+                  type="number"
+                  value={String(component.ramGB || '')}
+                  onChange={(v) => onUpdate(component.instanceId, { ramGB: parseFloat(v) || 0 })}
+                  placeholder="0"
+                />
+              </FieldRow>
+            )}
           </div>
 
           <FieldRow icon={<StickyNote className="w-3 h-3" />} label="Notes">
@@ -246,13 +260,39 @@ function DetailsEditor({
           </FieldRow>
         </div>
 
-        {/* Connections */}
+        {hints.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-base-700">
+            <h3 className="text-2xs font-semibold text-base-300 uppercase tracking-wide mb-2">
+              Compatibility
+            </h3>
+            <div className="flex flex-col gap-1.5">
+              {hints.map((hint) => (
+                <div
+                  key={hint.id}
+                  className={cn(
+                    'flex items-start gap-2 px-2 py-1.5 rounded-md border',
+                    hint.severity === 'warning'
+                      ? 'bg-warning-50/10 border-warning-500/20'
+                      : 'bg-base-850 border-base-700'
+                  )}
+                >
+                  {hint.severity === 'warning' ? (
+                    <AlertTriangle className="w-3 h-3 text-warning-400 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <Info className="w-3 h-3 text-base-400 flex-shrink-0 mt-0.5" />
+                  )}
+                  <p className="text-2xs text-base-300 leading-relaxed">{hint.message}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-5 pt-4 border-t border-base-700">
           <h3 className="text-2xs font-semibold text-base-300 uppercase tracking-wide mb-2.5">
             Connections ({compConnections.length})
           </h3>
 
-          {/* Connection mode */}
           {connectingFromId === component.instanceId ? (
             <div className="mb-3 p-2.5 rounded-md bg-accent/10 border border-accent/30">
               <p className="text-2xs text-accent font-medium mb-2">
@@ -296,7 +336,6 @@ function DetailsEditor({
             </button>
           )}
 
-          {/* Connection list */}
           {compConnections.length > 0 && (
             <div className="flex flex-col gap-1.5">
               {compConnections.map((conn) => {
@@ -333,7 +372,6 @@ function DetailsEditor({
         </div>
       </div>
 
-      {/* Footer actions */}
       <div className="flex items-center gap-2 px-3 py-2.5 border-t border-base-700 flex-shrink-0">
         <button
           onClick={() => onDuplicate(component.instanceId)}
@@ -349,6 +387,76 @@ function DetailsEditor({
           <Trash2 className="w-3.5 h-3.5" />
           Delete
         </button>
+      </div>
+    </div>
+  );
+}
+
+function CatalogComparison({
+  component,
+  catalogDef,
+  onReset,
+}: {
+  component: ProjectComponent;
+  catalogDef: HardwareDefinition;
+  onReset: () => void;
+}) {
+  const diffs: { label: string; catalog: string; project: string }[] = [];
+
+  if (component.price !== catalogDef.typicalPrice) {
+    diffs.push({
+      label: 'Price',
+      catalog: formatCost(catalogDef.typicalPrice, catalogDef.currency),
+      project: formatCost(component.price, component.currency),
+    });
+  }
+  if (component.powerWatts !== catalogDef.powerWatts) {
+    diffs.push({
+      label: 'Power',
+      catalog: formatPower(catalogDef.powerWatts),
+      project: formatPower(component.powerWatts),
+    });
+  }
+  if (component.storageTB !== catalogDef.storageTB) {
+    diffs.push({
+      label: 'Storage',
+      catalog: formatStorage(catalogDef.storageTB),
+      project: formatStorage(component.storageTB),
+    });
+  }
+  if (component.networkSpeedGbps !== catalogDef.networkSpeedGbps) {
+    diffs.push({
+      label: 'Network',
+      catalog: formatNetwork(catalogDef.networkSpeedGbps),
+      project: formatNetwork(component.networkSpeedGbps),
+    });
+  }
+
+  if (diffs.length === 0) return null;
+
+  return (
+    <div className="mb-3 p-2.5 rounded-md bg-base-850 border border-base-700">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-2xs font-semibold text-base-300 uppercase tracking-wide">
+          Project Overrides
+        </span>
+        <button
+          onClick={onReset}
+          className="flex items-center gap-1 text-2xs text-base-400 hover:text-accent transition-colors"
+        >
+          <RotateCcw className="w-3 h-3" />
+          Reset to catalog
+        </button>
+      </div>
+      <div className="flex flex-col gap-1">
+        {diffs.map((d) => (
+          <div key={d.label} className="flex items-center gap-2 text-2xs">
+            <span className="text-base-400 w-14 flex-shrink-0">{d.label}</span>
+            <span className="text-base-500 line-through font-mono">{d.catalog}</span>
+            <span className="text-base-400">→</span>
+            <span className="text-accent font-mono font-medium">{d.project}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

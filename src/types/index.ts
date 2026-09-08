@@ -31,25 +31,94 @@ export type PrimaryGoal =
   | 'learning'
   | 'other';
 
-export interface ComponentDefinition {
+export type SpecSourceType = 'estimate' | 'typical' | 'manufacturer' | 'user';
+
+export type FormFactor =
+  | 'mini-pc'
+  | 'nuc'
+  | 'sff'
+  | 'desktop'
+  | 'tower'
+  | 'rack-1u'
+  | 'rack-2u'
+  | 'rack-4u'
+  | 'sbc'
+  | 'nas-desktop'
+  | 'rackmount-nas'
+  | 'ap'
+  | 'desktop-router'
+  | 'rack-router'
+  | 'ups-tower'
+  | 'ups-rack'
+  | 'pdu'
+  | 'drive'
+  | 'external'
+  | 'card'
+  | 'adapter'
+  | 'panel'
+  | 'cabinet'
+  | 'wall-mount'
+  | 'custom';
+
+export interface HardwareDefinition {
   id: string;
   name: string;
-  category: ComponentCategory;
   manufacturer: string;
   model: string;
+  category: ComponentCategory;
+  subcategory?: string;
   description: string;
+  typicalPrice: number;
+  currency: Currency;
+  powerWatts: number;
+  idlePowerWatts?: number;
+  maxPowerWatts?: number;
+  storageTB: number;
+  driveBays?: number;
+  networkPorts?: number;
+  networkSpeedGbps: number;
+  cpuCores?: number;
+  ramGB?: number;
+  expandableRam?: boolean;
+  formFactor: FormFactor;
+  virtualizationSupport?: boolean;
+  useCases: string[];
+  notes?: string;
+  specSourceType: SpecSourceType;
+}
+
+export interface ProjectComponent {
+  instanceId: string;
+  hardwareDefinitionId: string;
+  x: number;
+  y: number;
+
+  name: string;
+  manufacturer: string;
+  model: string;
+  category: ComponentCategory;
+  subcategory?: string;
+  description: string;
+
   price: number;
   currency: Currency;
   powerWatts: number;
+  idlePowerWatts?: number;
+  maxPowerWatts?: number;
   storageTB: number;
+  driveBays?: number;
+  networkPorts?: number;
   networkSpeedGbps: number;
+  cpuCores?: number;
+  ramGB?: number;
+  expandableRam?: boolean;
+  formFactor: FormFactor;
+  virtualizationSupport?: boolean;
+  useCases: string[];
   notes?: string;
-}
+  specSourceType: SpecSourceType;
 
-export interface ProjectComponent extends ComponentDefinition {
-  instanceId: string;
-  x: number;
-  y: number;
+  hasOverrides?: boolean;
 }
 
 export interface Connection {
@@ -82,9 +151,9 @@ export interface AnalysisResult {
   componentCount: number;
 }
 
-export interface AnalysisWarning {
+export interface CompatibilityHint {
   id: string;
-  severity: 'info' | 'warning' | 'danger';
+  severity: 'info' | 'warning';
   message: string;
 }
 
@@ -101,4 +170,16 @@ export interface CreateProjectInput {
   experienceLevel: ExperienceLevel;
   budget?: number;
   currency: Currency;
+}
+
+export interface CustomHardwareInput {
+  name: string;
+  manufacturer: string;
+  model: string;
+  category: ComponentCategory;
+  price: number;
+  powerWatts: number;
+  storageTB: number;
+  networkSpeedGbps: number;
+  notes?: string;
 }

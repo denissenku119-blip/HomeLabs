@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, type PointerEvent as ReactPointerEvent } from 'react';
-import type { ProjectComponent, Connection, ComponentDefinition, ConnectionType } from '@/types';
+import type { ProjectComponent, Connection, HardwareDefinition, ConnectionType } from '@/types';
 import { CanvasNode } from './CanvasNode';
 import { CanvasConnections } from './CanvasConnections';
 import { CanvasToolbar } from './CanvasToolbar';
@@ -25,7 +25,7 @@ interface ArchitectureCanvasProps {
   onToggleGrid: () => void;
   onSelect: (id: string | null) => void;
   onMove: (id: string, x: number, y: number) => void;
-  onAdd: (def: ComponentDefinition, x: number, y: number) => void;
+  onAdd: (def: HardwareDefinition, x: number, y: number) => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onStartConnecting: (id: string) => void;
@@ -33,8 +33,8 @@ interface ArchitectureCanvasProps {
   onCancelConnecting: () => void;
   onDeleteConnection: (id: string) => void;
   onAddFirst: () => void;
-  draggedDef: ComponentDefinition | null;
-  onDropDef: (def: ComponentDefinition, x: number, y: number) => void;
+  draggedDef: HardwareDefinition | null;
+  onDropDef: (def: HardwareDefinition, x: number, y: number) => void;
 }
 
 export function ArchitectureCanvas(props: ArchitectureCanvasProps) {

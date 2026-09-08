@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, PanelLeft, PanelRight, Plus } from 'lucide-react';
-import type { ComponentDefinition } from '@/types';
+import type { HardwareDefinition } from '@/types';
 import { useProjectState } from '@/hooks/useProjectState';
-import { ComponentLibrary } from '@/features/builder/ComponentLibrary';
+import { HardwareLibrary } from '@/features/builder/HardwareLibrary';
+import { CustomHardwareModal } from '@/features/builder/CustomHardwareModal';
 import { ArchitectureCanvas } from '@/features/builder/ArchitectureCanvas';
 import { NodeDetailsPanel } from '@/features/builder/NodeDetailsPanel';
 import { ProjectSummary } from '@/features/builder/ProjectSummary';
-import { componentCatalog } from '@/data/componentCatalog';
+import { hardwareCatalog } from '@/data/hardware';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
-import type { CreateProjectInput } from '@/types';
+import type { CreateProjectInput, CustomHardwareInput } from '@/types';
 
 interface BuilderWorkspaceProps {
   projectId: string;
@@ -22,21 +23,26 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
-  const [draggedDef, setDraggedDef] = useState<ComponentDefinition | null>(null);
+  const [draggedHw, setDraggedHw] = useState<HardwareDefinition | null>(null);
   const [mobilePanel, setMobilePanel] = useState<'library' | 'details' | null>(null);
+  const [customModalOpen, setCustomModalOpen] = useState(false);
 
   const { project, selectedId, connectingFromId, pendingConnectionType, saved } = state;
   const { selectedComponent } = actions;
 
-  const addAtDefault = (def: ComponentDefinition) => {
-    const offset = project.components.length * 24;
-    actions.addComponent(def, 160 + (offset % 180), 100 + (offset % 160));
+  const handleAddHardware = (hw: HardwareDefinition) => {
+    actions.addHardware(hw);
+    setMobilePanel(null);
+  };
+
+  const handleAddCustom = (input: CustomHardwareInput) => {
+    actions.addCustomHardware(input);
     setMobilePanel(null);
   };
 
   const handleAddFirst = () => {
-    const router = componentCatalog.find((item) => item.name === 'Router');
-    if (router) addAtDefault(router);
+    const router = hardwareCatalog.find((hw) => hw.name === 'Basic Router');
+    if (router) handleAddHardware(router);
   };
 
   const handleCompleteConnection = (targetId: string) => {
@@ -76,28 +82,32 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
 
   return (
     <div className="flex flex-col h-full min-h-[620px] bg-base-950">
+      <CustomHardwareModal
+        open={customModalOpen}
+        onClose={() => setCustomModalOpen(false)}
+        onAdd={handleAddCustom}
+      />
+
       <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-b border-base-700 bg-base-900">
-        {panelButton('library', 'Components', <PanelLeft className="w-4 h-4" />)}
-        {panelButton('details', selectedComponent ? 'Selected component' : 'Overview', <PanelRight className="w-4 h-4" />)}
+        {panelButton('library', 'Hardware', <PanelLeft className="w-4 h-4" />)}
+        {panelButton('details', selectedComponent ? 'Selected' : 'Overview', <PanelRight className="w-4 h-4" />)}
         <Badge variant="default" className="ml-auto">{project.components.length} placed</Badge>
       </div>
 
       <div className="relative flex-1 flex min-h-0 flex-col lg:flex-row">
         <aside className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 border-r border-base-700 bg-base-900 min-h-0">
-          <ComponentLibrary
-            onAdd={addAtDefault}
-            onDragStart={setDraggedDef}
-            onDragEnd={() => setDraggedDef(null)}
+          <HardwareLibrary
+            onAdd={handleAddHardware}
+            onAddCustom={() => setCustomModalOpen(true)}
           />
         </aside>
 
         {mobilePanel === 'library' && (
           <div className="lg:hidden absolute inset-x-0 top-0 z-30 h-[min(70vh,520px)] bg-base-900 border-b border-base-700 shadow-elevated">
-            <ComponentLibrary
+            <HardwareLibrary
               compact
-              onAdd={addAtDefault}
-              onDragStart={setDraggedDef}
-              onDragEnd={() => setDraggedDef(null)}
+              onAdd={handleAddHardware}
+              onAddCustom={() => setCustomModalOpen(true)}
             />
           </div>
         )}
@@ -116,7 +126,7 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
           onToggleGrid={() => setShowGrid((value) => !value)}
           onSelect={handleSelect}
           onMove={actions.moveComponent}
-          onAdd={actions.addComponent}
+          onAdd={(def, x, y) => actions.addHardware(def, x, y)}
           onDelete={handleDeleteSelected}
           onDuplicate={actions.duplicateComponent}
           onStartConnecting={actions.startConnecting}
@@ -124,10 +134,10 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
           onCancelConnecting={actions.cancelConnecting}
           onDeleteConnection={actions.deleteConnection}
           onAddFirst={handleAddFirst}
-          draggedDef={draggedDef}
+          draggedDef={draggedHw}
           onDropDef={(def, x, y) => {
-            actions.addComponent(def, Math.max(12, x), Math.max(12, y));
-            setDraggedDef(null);
+            actions.addHardware(def, Math.max(12, x), Math.max(12, y));
+            setDraggedHw(null);
           }}
         />
 
@@ -139,6 +149,7 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
             connectingFromId={connectingFromId}
             pendingConnectionType={pendingConnectionType}
             onUpdate={actions.updateComponent}
+            onResetToCatalog={actions.resetToCatalog}
             onDelete={handleDeleteSelected}
             onDuplicate={actions.duplicateComponent}
             onStartConnecting={actions.startConnecting}
@@ -159,6 +170,7 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
               connectingFromId={connectingFromId}
               pendingConnectionType={pendingConnectionType}
               onUpdate={actions.updateComponent}
+              onResetToCatalog={actions.resetToCatalog}
               onDelete={handleDeleteSelected}
               onDuplicate={actions.duplicateComponent}
               onStartConnecting={actions.startConnecting}
@@ -174,7 +186,7 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
 
       <div className="lg:hidden flex items-center gap-2 px-3 py-2 border-t border-base-700 bg-base-900">
         <Button size="sm" leftIcon={<Plus className="w-3.5 h-3.5" />} onClick={() => setMobilePanel('library')}>
-          Add component
+          Add hardware
         </Button>
         <span className="text-2xs text-base-400 ml-auto">Tap a node to edit</span>
       </div>
