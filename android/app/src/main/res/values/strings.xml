@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HomeLab Architect</string>
+    <string name="title_activity_main">HomeLab Architect</string>
+    <string name="package_name">com.maxjeremy.homelabarchitect</string>
+    <string name="custom_url_scheme">com.maxjeremy.homelabarchitect</string>
+</resources>
