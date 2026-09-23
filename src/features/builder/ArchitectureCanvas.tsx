@@ -89,6 +89,8 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
 
   const handleCanvasPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
+    // Interactive overlays (toolbar, empty-state actions) keep their own clicks.
+    if ((e.target as HTMLElement).closest('button, a, input, select, textarea')) return;
     // Click on empty canvas
     if (connectingFromId) {
       onCancelConnecting();
@@ -101,7 +103,11 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
       panX: pan.x,
       panY: pan.y,
     };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // pointer capture is optional
+    }
   };
 
   const handleCanvasPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -113,7 +119,11 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
 
   const handleCanvasPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (panState.current) {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // pointer capture is optional
+      }
       panState.current = null;
     }
   };
@@ -170,9 +180,11 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
         showGrid && 'grid-bg',
         'cursor-grab active:cursor-grabbing'
       )}
+      style={{ touchAction: 'none' }}
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
+      onPointerCancel={handleCanvasPointerUp}
       onWheel={handleWheel}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
@@ -196,7 +208,7 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
 
       {/* Canvas content layer */}
       <div
-        className="absolute top-0 left-0"
+        className="absolute inset-0"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
           transformOrigin: '0 0',
@@ -216,12 +228,15 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
             component={comp}
             selected={selectedId === comp.instanceId}
             isConnectingFrom={connectingFromId === comp.instanceId}
+            isConnecting={connectingFromId !== null}
             scale={scale}
             onSelect={onSelect}
             onMove={onMove}
             onStartConnecting={(id) => {
               onStartConnecting(id);
             }}
+            onCompleteConnecting={onCompleteConnecting}
+            onCancelConnecting={onCancelConnecting}
             onDelete={onDelete}
             onDuplicate={onDuplicate}
           />

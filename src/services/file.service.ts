@@ -1,4 +1,4 @@
-import { isNative } from './platform.service';
+import { isPluginAvailable } from './platform.service';
 
 export interface ExportOptions {
   filename: string;
@@ -13,7 +13,7 @@ export interface ExportResult {
 }
 
 export async function exportFile(options: ExportOptions): Promise<ExportResult> {
-  if (isNative) {
+  if (isPluginAvailable('Filesystem')) {
     try {
       const { Filesystem, Directory, FilesystemEncoding } = await import('@capacitor/filesystem');
       const path = options.filename.replace(/\.\w+$/, '');

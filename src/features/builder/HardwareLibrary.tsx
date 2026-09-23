@@ -20,11 +20,19 @@ import { CATEGORY_LABELS, CATEGORY_ICONS, CATEGORY_ORDER } from '@/data/constant
 import { searchHardware, groupByCategory } from '@/utils/hardwareSearch';
 import { formatCost, formatPower, formatStorage, formatNetwork } from '@/utils/calculations';
 import { cn } from '@/lib/utils';
+import { UpgradeModal } from '@/components/pro/UpgradePanel';
+import {
+  usePlan,
+  isStarterHardware,
+  FREE_CUSTOM_HARDWARE_LIMIT,
+} from '@/features/entitlements/plan';
 
 interface HardwareLibraryProps {
   onAdd: (hw: HardwareDefinition) => void;
   onAddCustom: () => void;
   compact?: boolean;
+  /** Number of custom components already in this project (Free is limited). */
+  customCount?: number;
 }
 
 type FilterCategory = ComponentCategory | 'all';
@@ -39,7 +47,14 @@ const FILTER_OPTIONS: { value: FilterCategory; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-export function HardwareLibrary({ onAdd, onAddCustom, compact }: HardwareLibraryProps) {
+export function HardwareLibrary({ onAdd, onAddCustom, compact, customCount = 0 }: HardwareLibraryProps) {
+  const { isPro } = usePlan();
+  const [upgradeReason, setUpgradeReason] = useState<string | null>(null);
+  const catalog = useMemo(
+    () => (isPro ? hardwareCatalog : hardwareCatalog.filter((hw) => isStarterHardware(hw.id))),
+    [isPro]
+  );
+  const customLimitReached = !isPro && customCount >= FREE_CUSTOM_HARDWARE_LIMIT;
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
   const [expanded, setExpanded] = useState<Set<ComponentCategory>>(
@@ -48,8 +63,8 @@ export function HardwareLibrary({ onAdd, onAddCustom, compact }: HardwareLibrary
   const [detailHardware, setDetailHardware] = useState<HardwareDefinition | null>(null);
 
   const filtered = useMemo(
-    () => searchHardware(hardwareCatalog, { query: search, category: activeFilter }),
-    [search, activeFilter]
+    () => searchHardware(catalog, { query: search, category: activeFilter }),
+    [catalog, search, activeFilter]
   );
 
   const grouped = useMemo(() => groupByCategory(filtered), [filtered]);
@@ -81,7 +96,11 @@ export function HardwareLibrary({ onAdd, onAddCustom, compact }: HardwareLibrary
       <div className="px-3 py-2.5 border-b border-base-700 flex-shrink-0">
         <h2 className="text-sm font-semibold text-base-100">Hardware Library</h2>
         <p className="text-2xs text-base-400 mt-0.5">
-          {compact ? 'Tap to inspect or add' : 'Browse, inspect, and add hardware'}
+          {isPro
+            ? compact
+              ? 'Tap to inspect or add'
+              : 'Browse, inspect, and add hardware'
+            : 'Starter library — Pro unlocks the full catalog'}
         </p>
       </div>
 
@@ -116,7 +135,7 @@ export function HardwareLibrary({ onAdd, onAddCustom, compact }: HardwareLibrary
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2.5 pb-3">
+      <div className="flex-1 touch-scroll-y px-2.5 pb-3">
         {filtered.length === 0 && (
           <div className="text-center py-6">
             <Search className="w-6 h-6 text-base-600 mx-auto mb-2" />
@@ -167,15 +186,42 @@ export function HardwareLibrary({ onAdd, onAddCustom, compact }: HardwareLibrary
         })}
       </div>
 
-      <div className="px-2.5 py-2 border-t border-base-700 flex-shrink-0">
+      <div className="px-2.5 py-2 border-t border-base-700 flex-shrink-0 space-y-2">
+        {!isPro && (
+          <button
+            onClick={() =>
+              setUpgradeReason('The Free plan includes a curated starter library. Pro unlocks the full hardware catalog.')
+            }
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-md bg-accent/10 border border-accent/30 text-accent hover:bg-accent/15 transition-colors"
+          >
+            Unlock the full hardware library
+          </button>
+        )}
         <button
-          onClick={onAddCustom}
+          onClick={() =>
+            customLimitReached
+              ? setUpgradeReason(
+                  `Free includes up to ${FREE_CUSTOM_HARDWARE_LIMIT} custom hardware components per project. Pro removes the limit.`
+                )
+              : onAddCustom()
+          }
           className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-md bg-base-850 border border-base-600 text-base-200 hover:text-accent hover:border-accent/40 transition-colors"
         >
           <Wrench className="w-3.5 h-3.5" />
           Add Custom Hardware
+          {!isPro && (
+            <span className="text-2xs text-base-400">
+              {customCount}/{FREE_CUSTOM_HARDWARE_LIMIT}
+            </span>
+          )}
         </button>
       </div>
+
+      <UpgradeModal
+        open={upgradeReason !== null}
+        reason={upgradeReason ?? undefined}
+        onClose={() => setUpgradeReason(null)}
+      />
     </div>
   );
 }
@@ -285,7 +331,7 @@ function HardwareDetailPanel({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 touch-scroll-y p-3">
         <p className="text-xs text-base-300 leading-relaxed mb-4">{hw.description}</p>
 
         <div className="grid grid-cols-2 gap-2 mb-4">

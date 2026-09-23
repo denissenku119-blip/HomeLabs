@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { Server, Target, Wrench, Activity, ClipboardList, ArrowRight, Shield, FileText, HelpCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { APP_VERSION, APP_NAME } from '@/config/app';
+import { BackButton } from '@/components/layout/BackButton';
+import { APP_NAME } from '@/config/app';
 
 const values = [
   { icon: Target, title: 'Design first', desc: 'Plan the full system before spending a dollar on hardware.' },
@@ -14,7 +15,7 @@ const values = [
 
 export function AboutPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="public-page-scroll flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-base-950/80 backdrop-blur-md border-b border-base-800 safe-top">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
@@ -33,6 +34,7 @@ export function AboutPage() {
       </header>
 
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-12 sm:py-16">
+        <BackButton to="/" label="Back to home" className="mb-4" />
         <SectionHeader
           eyebrow="About"
           title="HomeLab Architect exists to make homelab planning easier."
@@ -78,29 +80,21 @@ export function AboutPage() {
           <Card>
             <div className="flex items-start gap-4">
               <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-base-850 border border-base-700 text-accent flex-shrink-0">
-                <Info className="w-5 h-5" />
-              </span>
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-base-50">Version</h3>
-                <p className="text-sm text-base-300 mt-1">
-                  {APP_NAME} v{APP_VERSION}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-start gap-4">
-              <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-base-850 border border-base-700 text-accent flex-shrink-0">
                 <Shield className="w-5 h-5" />
               </span>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-base-50">Privacy</h3>
                 <p className="text-sm text-base-300 mt-1 leading-relaxed">
                   {APP_NAME} stores your projects locally on your device. No account is required,
-                  and your project data is not sent to any server. This section will be updated
-                  with a full Privacy Policy before the production release.
+                  and your project data is not sent to any server.
                 </p>
+                <Link
+                  to="/privacy"
+                  className="inline-flex items-center gap-1.5 mt-3 min-h-[44px] text-sm font-medium text-accent hover:text-accent-400 transition-colors"
+                >
+                  Read the Privacy Policy
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
           </Card>
@@ -115,9 +109,24 @@ export function AboutPage() {
                 <p className="text-sm text-base-300 mt-1 leading-relaxed">
                   All calculations — cost, power, storage, and network — are estimates based on
                   typical hardware specifications. Actual results will vary. Always verify
-                  specifications with manufacturers before purchasing. A full Terms of Service
-                  will be published before the production release.
+                  specifications with manufacturers before purchasing.
                 </p>
+                <div className="flex flex-wrap gap-4">
+                  <Link
+                    to="/terms"
+                    className="inline-flex items-center gap-1.5 mt-3 min-h-[44px] text-sm font-medium text-accent hover:text-accent-400 transition-colors"
+                  >
+                    Terms of Use
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link
+                    to="/disclaimer"
+                    className="inline-flex items-center gap-1.5 mt-3 min-h-[44px] text-sm font-medium text-accent hover:text-accent-400 transition-colors"
+                  >
+                    Disclaimer
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </div>
             </div>
           </Card>
@@ -130,9 +139,17 @@ export function AboutPage() {
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-base-50">Support & Feedback</h3>
                 <p className="text-sm text-base-300 mt-1 leading-relaxed">
-                  Support channels and a feedback form will be available in the production release.
-                  For now, this application is in active development.
+                  Found a bug, or want a feature added? Send it through the in-app feedback form.
+                  It is saved on your device and gives you a copyable summary — this build has no
+                  server connected, so nothing is transmitted automatically.
                 </p>
+                <Link
+                  to="/feedback"
+                  className="inline-flex items-center gap-1.5 mt-3 min-h-[44px] text-sm font-medium text-accent hover:text-accent-400 transition-colors"
+                >
+                  Open the feedback form
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
           </Card>

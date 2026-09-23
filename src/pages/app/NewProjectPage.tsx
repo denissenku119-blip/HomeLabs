@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { useNavigate } from '@/lib/router-compat';
 import { ArrowRight, Rocket } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
+import { BackButton } from '@/components/layout/BackButton';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -10,6 +11,10 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { CurrencySelect } from '@/components/CurrencySelect';
 import { useI18n } from '@/i18n/I18nContext';
 import { getCurrencySymbol } from '@/data/currencies';
+import { UpgradePanel } from '@/components/pro/UpgradePanel';
+import { usePlan, FREE_PROJECT_LIMIT } from '@/features/entitlements/plan';
+import { getProjects } from '@/repositories/projectRepository';
+import { generateProjectId } from '@/utils/projectStore';
 import type { PrimaryGoal, ExperienceLevel, CreateProjectInput } from '@/types';
 
 export function NewProjectPage() {
@@ -21,6 +26,9 @@ export function NewProjectPage() {
   const [budget, setBudget] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [errors, setErrors] = useState<{ name?: string; goal?: string; level?: string }>({});
+  const { isPro } = usePlan();
+  const savedCount = useMemo(() => getProjects().length, []);
+  const limitReached = !isPro && savedCount >= FREE_PROJECT_LIMIT;
 
   const goalOptions: { value: PrimaryGoal; label: string }[] = [
     { value: 'self-hosting', label: t('goal.self-hosting') },
@@ -52,7 +60,7 @@ export function NewProjectPage() {
       return;
     }
 
-    const id = `proj-${Date.now()}`;
+    const id = generateProjectId();
     navigate(`/app/project/${id}`, {
       state: {
         name: name.trim(),
@@ -67,12 +75,23 @@ export function NewProjectPage() {
   return (
     <AppShell>
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        <BackButton to="/app" label={t('navigation.dashboard')} className="mb-4" />
         <SectionHeader
           eyebrow={t('navigation.newProject')}
           title={t('newProject.title')}
           description={t('newProject.description')}
         />
 
+        {limitReached ? (
+          <Card className="mt-8">
+            <UpgradePanel reason={`Free includes ${FREE_PROJECT_LIMIT} saved project, and you already have one. Pro unlocks unlimited projects — your existing project stays untouched.`} />
+            <div className="mt-4 pt-4 border-t border-base-700 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+              <Button variant="ghost" onClick={() => navigate('/app/projects')}>
+                Back to projects
+              </Button>
+            </div>
+          </Card>
+        ) : (
         <Card className="mt-8">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input
@@ -137,6 +156,7 @@ export function NewProjectPage() {
             </div>
           </form>
         </Card>
+        )}
       </div>
     </AppShell>
   );

@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Wifi, WifiOff, RefreshCw, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import { Wifi, WifiOff, RefreshCw, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { isNativePlatform } from "@/services/platform.service";
+import { logRuntimeError } from "@/lib/runtime-diagnostics";
 
 export function OfflineIndicator() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  // Assume online for the first render so server and client markup match,
+  // then sync with the real status after mount.
+  const [isOnline, setIsOnline] = useState(true);
   const [showUpdate, setShowUpdate] = useState(false);
   const [showOfflineBanner, setShowOfflineBanner] = useState(false);
 
@@ -17,41 +21,51 @@ export function OfflineIndicator() {
       setShowOfflineBanner(true);
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     if (!navigator.onLine) {
+      setIsOnline(false);
       setShowOfflineBanner(true);
     }
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((reg) => {
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setShowUpdate(true);
-              }
-            });
-          }
+    if (!isNativePlatform() && "serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then((reg) => {
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener("statechange", () => {
+                if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                  setShowUpdate(true);
+                }
+              });
+            }
+          });
+        })
+        .catch((error) => {
+          logRuntimeError(error, { stage: "pwa-initialization", service: "OfflineIndicator" });
         });
-      });
     }
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
   const handleUpdate = () => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistration().then((reg) => {
-        if (reg && reg.waiting) {
-          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-      });
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistration()
+        .then((reg) => {
+          if (reg && reg.waiting) {
+            reg.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
+        })
+        .catch((error) => {
+          logRuntimeError(error, { stage: "pwa-initialization", service: "OfflineIndicator" });
+        });
     }
     window.location.reload();
   };
@@ -76,10 +90,10 @@ export function OfflineIndicator() {
       {/* Status dot */}
       <span
         className={cn(
-          'inline-flex items-center gap-1 text-2xs',
-          isOnline ? 'text-base-400' : 'text-warning-400'
+          "inline-flex items-center gap-1 text-2xs",
+          isOnline ? "text-base-400" : "text-warning-400",
         )}
-        title={isOnline ? 'Online' : 'Offline'}
+        title={isOnline ? "Online" : "Offline"}
       >
         {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
       </span>

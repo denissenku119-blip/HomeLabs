@@ -6,8 +6,8 @@ import type {
   ConnectionType,
   CreateProjectInput,
   CustomHardwareInput,
-} from '@/types';
-import { STORAGE_KEY_PREFIX } from '@/data/constants';
+} from "@/types";
+import { STORAGE_KEY_PREFIX } from "@/data/constants";
 
 let instanceCounter = 0;
 
@@ -19,7 +19,7 @@ export function generateInstanceId(): string {
 export function createProjectComponentFromHardware(
   hw: HardwareDefinition,
   x: number = 0,
-  y: number = 0
+  y: number = 0,
 ): ProjectComponent {
   return {
     instanceId: generateInstanceId(),
@@ -56,7 +56,7 @@ export function createProjectComponentFromHardware(
 export function createCustomHardwareComponent(
   input: CustomHardwareInput,
   x: number = 0,
-  y: number = 0
+  y: number = 0,
 ): ProjectComponent {
   const id = `custom-${Date.now()}`;
   return {
@@ -70,14 +70,16 @@ export function createCustomHardwareComponent(
     category: input.category,
     description: `${input.manufacturer} ${input.model} — custom hardware`,
     price: input.price,
-    currency: 'USD',
+    currency: "USD",
     powerWatts: input.powerWatts,
     storageTB: input.storageTB,
     networkSpeedGbps: input.networkSpeedGbps,
-    formFactor: 'custom',
+    cpuCores: input.cpuCores,
+    ramGB: input.ramGB,
+    formFactor: "custom",
     useCases: [],
     notes: input.notes,
-    specSourceType: 'user',
+    specSourceType: "user",
     hasOverrides: false,
   };
 }
@@ -85,8 +87,8 @@ export function createCustomHardwareComponent(
 export function createConnection(
   fromId: string,
   toId: string,
-  type: ConnectionType = 'ethernet',
-  label?: string
+  type: ConnectionType = "ethernet",
+  label?: string,
 ): Connection {
   return {
     id: `conn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -97,23 +99,40 @@ export function createConnection(
   };
 }
 
-export function createProject(input: CreateProjectInput): Project {
+/**
+ * One stable, collision-free id per project, generated once at creation and
+ * never regenerated afterwards.
+ */
+export function generateProjectId(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return `proj-${crypto.randomUUID()}`;
+    }
+  } catch {
+    // fall through to the timestamp id below
+  }
+  return `proj-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function createProject(input: CreateProjectInput, id?: string): Project {
   const now = new Date().toISOString();
   return {
-    id: `proj-${Date.now()}`,
-    name: input.name,
+    // The routed project id must win, otherwise the saved record and the URL
+    // disagree and reloads / report deep links can never find the project.
+    id: id ?? generateProjectId(),
+    name: input.name?.trim() || "Untitled Project",
     goal: input.goal,
     experienceLevel: input.experienceLevel,
     budget: input.budget,
     currency: input.currency,
     electricityCostPerKwh: 0.15,
-    status: 'draft',
+    status: "draft",
     components: [],
     connections: [],
     createdAt: now,
     updatedAt: now,
     version: 1,
-    syncStatus: 'local',
+    syncStatus: "local",
   };
 }
 
@@ -167,8 +186,28 @@ function saveProjectId(id: string): void {
 export function getProjectIds(): string[] {
   try {
     const raw = localStorage.getItem(`${STORAGE_KEY_PREFIX}index`);
-    if (!raw) return [];
-    return JSON.parse(raw) as string[];
+    if (!raw) return recoverProjectIds();
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return recoverProjectIds();
+    return [
+      ...new Set(parsed.filter((id): id is string => typeof id === "string" && id.length > 0)),
+    ];
+  } catch {
+    return recoverProjectIds();
+  }
+}
+
+function recoverProjectIds(): string[] {
+  try {
+    const ids: string[] = [];
+    const indexKey = `${STORAGE_KEY_PREFIX}index`;
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (!key || key === indexKey || !key.startsWith(STORAGE_KEY_PREFIX)) continue;
+      const id = key.slice(STORAGE_KEY_PREFIX.length);
+      if (id && loadProject(id)) ids.push(id);
+    }
+    return ids;
   } catch {
     return [];
   }
@@ -181,17 +220,18 @@ export function loadAllProjects(): Project[] {
 }
 
 const COMPONENT_DEFAULTS = {
-  manufacturer: 'Generic',
-  formFactor: 'custom' as const,
+  manufacturer: "Generic",
+  formFactor: "custom" as const,
   useCases: [] as string[],
-  specSourceType: 'user' as const,
+  specSourceType: "user" as const,
   hasOverrides: false,
 };
 
 function normalizeProject(raw: unknown): Project | null {
-  if (!raw || typeof raw !== 'object') return null;
+  if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
-  if (!obj.id || !obj.name) return null;
+  // A missing name must never discard a saved project — only a missing id can.
+  if (!obj.id) return null;
 
   const components = Array.isArray(obj.components)
     ? (obj.components as unknown[]).filter(isValidComponent).map(normalizeComponent)
@@ -199,49 +239,51 @@ function normalizeProject(raw: unknown): Project | null {
 
   const validInstanceIds = new Set(components.map((c) => c.instanceId));
   const connections = Array.isArray(obj.connections)
-    ? (obj.connections as unknown[])
-        .filter((c) => isValidConnection(c, validInstanceIds)) as Connection[]
+    ? ((obj.connections as unknown[]).filter((c) =>
+        isValidConnection(c, validInstanceIds),
+      ) as Connection[])
     : [];
 
   return {
     id: String(obj.id),
-    name: String(obj.name),
-    goal: (obj.goal as Project['goal']) ?? 'other',
-    experienceLevel: (obj.experienceLevel as Project['experienceLevel']) ?? 'beginner',
-    budget: typeof obj.budget === 'number' ? obj.budget : undefined,
-    currency: (obj.currency as Project['currency']) ?? 'USD',
-    electricityCostPerKwh: typeof obj.electricityCostPerKwh === 'number' ? obj.electricityCostPerKwh : 0.15,
-    status: (obj.status as Project['status']) ?? 'draft',
+    name: obj.name ? String(obj.name) : "Untitled Project",
+    goal: (obj.goal as Project["goal"]) ?? "other",
+    experienceLevel: (obj.experienceLevel as Project["experienceLevel"]) ?? "beginner",
+    budget: typeof obj.budget === "number" ? obj.budget : undefined,
+    currency: (obj.currency as Project["currency"]) ?? "USD",
+    electricityCostPerKwh:
+      typeof obj.electricityCostPerKwh === "number" ? obj.electricityCostPerKwh : 0.15,
+    status: (obj.status as Project["status"]) ?? "draft",
     components,
     connections,
     createdAt: String(obj.createdAt ?? new Date().toISOString()),
     updatedAt: String(obj.updatedAt ?? new Date().toISOString()),
-    version: typeof obj.version === 'number' ? obj.version : 1,
-    syncStatus: (obj.syncStatus as Project['syncStatus']) ?? 'local',
+    version: typeof obj.version === "number" ? obj.version : 1,
+    syncStatus: (obj.syncStatus as Project["syncStatus"]) ?? "local",
   };
 }
 
 function isValidComponent(c: unknown): boolean {
-  if (!c || typeof c !== 'object') return false;
+  if (!c || typeof c !== "object") return false;
   const obj = c as Record<string, unknown>;
-  return !!obj.instanceId && typeof obj.x === 'number' && typeof obj.y === 'number';
+  return !!obj.instanceId && typeof obj.x === "number" && typeof obj.y === "number";
 }
 
 function normalizeComponent(c: unknown): ProjectComponent {
   const obj = c as Record<string, unknown>;
   return {
     instanceId: String(obj.instanceId),
-    hardwareDefinitionId: String(obj.hardwareDefinitionId ?? obj.id ?? 'legacy'),
+    hardwareDefinitionId: String(obj.hardwareDefinitionId ?? obj.id ?? "legacy"),
     x: Number(obj.x) || 0,
     y: Number(obj.y) || 0,
-    name: String(obj.name ?? 'Unknown'),
+    name: String(obj.name ?? "Unknown"),
     manufacturer: String(obj.manufacturer ?? COMPONENT_DEFAULTS.manufacturer),
-    model: String(obj.model ?? ''),
-    category: (obj.category as ProjectComponent['category']) ?? 'other',
+    model: String(obj.model ?? ""),
+    category: (obj.category as ProjectComponent["category"]) ?? "other",
     subcategory: obj.subcategory ? String(obj.subcategory) : undefined,
-    description: String(obj.description ?? ''),
+    description: String(obj.description ?? ""),
     price: Number(obj.price) || 0,
-    currency: (obj.currency as ProjectComponent['currency']) ?? 'USD',
+    currency: (obj.currency as ProjectComponent["currency"]) ?? "USD",
     powerWatts: Number(obj.powerWatts) || 0,
     idlePowerWatts: obj.idlePowerWatts != null ? Number(obj.idlePowerWatts) : undefined,
     maxPowerWatts: obj.maxPowerWatts != null ? Number(obj.maxPowerWatts) : undefined,
@@ -252,17 +294,23 @@ function normalizeComponent(c: unknown): ProjectComponent {
     cpuCores: obj.cpuCores != null ? Number(obj.cpuCores) : undefined,
     ramGB: obj.ramGB != null ? Number(obj.ramGB) : undefined,
     expandableRam: obj.expandableRam != null ? Boolean(obj.expandableRam) : undefined,
-    formFactor: (obj.formFactor as ProjectComponent['formFactor']) ?? COMPONENT_DEFAULTS.formFactor,
-    virtualizationSupport: obj.virtualizationSupport != null ? Boolean(obj.virtualizationSupport) : undefined,
-    useCases: Array.isArray(obj.useCases) ? (obj.useCases as string[]) : COMPONENT_DEFAULTS.useCases,
+    formFactor: (obj.formFactor as ProjectComponent["formFactor"]) ?? COMPONENT_DEFAULTS.formFactor,
+    virtualizationSupport:
+      obj.virtualizationSupport != null ? Boolean(obj.virtualizationSupport) : undefined,
+    useCases: Array.isArray(obj.useCases)
+      ? (obj.useCases as string[])
+      : COMPONENT_DEFAULTS.useCases,
     notes: obj.notes ? String(obj.notes) : undefined,
-    specSourceType: (obj.specSourceType as ProjectComponent['specSourceType']) ?? COMPONENT_DEFAULTS.specSourceType,
-    hasOverrides: obj.hasOverrides != null ? Boolean(obj.hasOverrides) : COMPONENT_DEFAULTS.hasOverrides,
+    specSourceType:
+      (obj.specSourceType as ProjectComponent["specSourceType"]) ??
+      COMPONENT_DEFAULTS.specSourceType,
+    hasOverrides:
+      obj.hasOverrides != null ? Boolean(obj.hasOverrides) : COMPONENT_DEFAULTS.hasOverrides,
   };
 }
 
 function isValidConnection(c: unknown, validIds: Set<string>): boolean {
-  if (!c || typeof c !== 'object') return false;
+  if (!c || typeof c !== "object") return false;
   const obj = c as Record<string, unknown>;
   return (
     !!obj.id &&
@@ -276,7 +324,7 @@ function isValidConnection(c: unknown, validIds: Set<string>): boolean {
 export function getSmartPlacement(
   existingCount: number,
   canvasCenterX: number = 250,
-  canvasCenterY: number = 180
+  canvasCenterY: number = 180,
 ): { x: number; y: number } {
   if (existingCount === 0) {
     return { x: canvasCenterX, y: canvasCenterY };

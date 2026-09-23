@@ -186,5 +186,7 @@ export interface CustomHardwareInput {
   powerWatts: number;
   storageTB: number;
   networkSpeedGbps: number;
+  cpuCores?: number;
+  ramGB?: number;
   notes?: string;
 }

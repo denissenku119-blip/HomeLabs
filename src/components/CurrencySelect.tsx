@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, Check, ChevronDown } from 'lucide-react';
 import { CURRENCIES, formatCurrency } from '@/data/currencies';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/i18n/I18nContext';
 
 interface CurrencySelectProps {
   value: string;
@@ -14,11 +15,19 @@ interface CurrencySelectProps {
 export function CurrencySelect({
   value, onChange, label, helperText, testAmount = 1000,
 }: CurrencySelectProps) {
+  const { t, locale } = useI18n();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
 
   const selected = CURRENCIES.find((c) => c.code === value);
+  const displayNames = useMemo(() => {
+    try {
+      return new Intl.DisplayNames([locale], { type: 'currency' });
+    } catch {
+      return null;
+    }
+  }, [locale]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -59,7 +68,7 @@ export function CurrencySelect({
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="font-mono text-xs text-base-400 flex-shrink-0">{value}</span>
-          <span className="text-sm text-base-100 truncate">{selected?.name ?? value}</span>
+          <span className="text-sm text-base-100 truncate">{displayNames?.of(value) ?? selected?.name ?? value}</span>
         </span>
         <ChevronDown className={cn('w-4 h-4 text-base-400 flex-shrink-0 transition-transform', open && 'rotate-180')} />
       </button>
@@ -73,7 +82,7 @@ export function CurrencySelect({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search currencies..."
+              placeholder={t('settings.searchCurrencies')}
               className="w-full ps-8 pe-2 py-1.5 text-xs rounded-md bg-base-850 border border-base-700 text-base-100 placeholder:text-base-500 focus:outline-none focus:border-accent transition-colors"
               autoFocus
             />
@@ -103,7 +112,7 @@ export function CurrencySelect({
                   <span className={cn(
                     'text-xs flex-1 min-w-0 truncate',
                     value === c.code ? 'text-accent' : 'text-base-100'
-                  )}>{c.name}</span>
+                  )}>{displayNames?.of(c.code) ?? c.name}</span>
                   <span className="text-xs font-mono text-base-400 flex-shrink-0">{c.symbol}</span>
                   <span className="text-2xs font-mono text-base-500 flex-shrink-0 w-16 text-right">
                     {formatCurrency(testAmount, c.code)}

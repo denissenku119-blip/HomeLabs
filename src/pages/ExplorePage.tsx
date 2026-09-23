@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { ArrowRight, Server, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { BackButton } from '@/components/layout/BackButton';
 import { exploreExamples } from '@/data/mockData';
 import type { ExperienceLevel } from '@/types';
 
@@ -15,7 +16,7 @@ const difficultyVariant: Record<ExperienceLevel, 'success' | 'warning' | 'danger
 
 export function ExplorePage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="public-page-scroll flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-base-950/80 backdrop-blur-md border-b border-base-800">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
@@ -34,6 +35,7 @@ export function ExplorePage() {
       </header>
 
       <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
+        <BackButton to="/" label="Back to home" className="mb-4" />
         <SectionHeader
           eyebrow="Explore"
           title="Example HomeLab architectures"

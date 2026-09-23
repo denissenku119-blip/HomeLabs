@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useMemo } from 'react';
+import { Link } from '@/lib/router-compat';
+import { useCallback, useState } from 'react';
 import { Plus, FolderOpen } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/Button';
@@ -7,15 +7,46 @@ import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { ProjectCard } from '@/components/ui/ProjectCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { DeleteProjectDialog } from '@/components/ui/DeleteProjectDialog';
+import { RenameProjectDialog } from '@/components/ui/RenameProjectDialog';
 import { mockProjects } from '@/data/mockData';
-import { loadAllProjects } from '@/utils/projectStore';
+import { getProject, getProjects, deleteProjectRepo, saveProjectRepo } from '@/repositories/projectRepository';
 import { calculateAnalysis } from '@/utils/calculations';
 import { useI18n } from '@/i18n/I18nContext';
 
 export function ProjectsPage() {
   const { t } = useI18n();
-  const savedProjects = useMemo(() => loadAllProjects(), []);
+  const [savedProjects, setSavedProjects] = useState(() => getProjects());
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [pendingRename, setPendingRename] = useState<{ id: string; name: string } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const confirmRename = useCallback(
+    (name: string) => {
+      if (!pendingRename) return;
+      // Renaming updates the existing record in place — same id, same data.
+      const existing = getProject(pendingRename.id);
+      if (existing) saveProjectRepo({ ...existing, name });
+      setSavedProjects(getProjects());
+      setPendingRename(null);
+    },
+    [pendingRename],
+  );
+
   const projects = [...savedProjects, ...mockProjects];
+  const savedIds = new Set(savedProjects.map((p) => p.id));
+
+  const confirmDelete = useCallback(() => {
+    if (!pendingDelete) return;
+    try {
+      deleteProjectRepo(pendingDelete.id);
+      setSavedProjects(getProjects());
+      setPendingDelete(null);
+      setDeleteError(null);
+    } catch {
+      setDeleteError('Could not delete this project. Please try again.');
+    }
+  }, [pendingDelete]);
 
   return (
     <AppShell>
@@ -43,6 +74,19 @@ export function ProjectsPage() {
                   status={project.status}
                   components={project.components}
                   estimatedCost={calculateAnalysis(project.components, project.connections).totalCost}
+                  onDelete={
+                    savedIds.has(project.id)
+                      ? () => {
+                          setDeleteError(null);
+                          setPendingDelete({ id: project.id, name: project.name });
+                        }
+                      : undefined
+                  }
+                  onRename={
+                    savedIds.has(project.id)
+                      ? () => setPendingRename({ id: project.id, name: project.name })
+                      : undefined
+                  }
                 />
               ))}
             </div>
@@ -64,6 +108,24 @@ export function ProjectsPage() {
           )}
         </div>
       </div>
+
+      <DeleteProjectDialog
+        open={pendingDelete !== null}
+        projectName={pendingDelete?.name}
+        error={deleteError}
+        onCancel={() => {
+          setPendingDelete(null);
+          setDeleteError(null);
+        }}
+        onConfirm={confirmDelete}
+      />
+
+      <RenameProjectDialog
+        open={pendingRename !== null}
+        currentName={pendingRename?.name}
+        onCancel={() => setPendingRename(null)}
+        onConfirm={confirmRename}
+      />
     </AppShell>
   );
 }

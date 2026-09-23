@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import {
   ArrowRight,
   Cpu,
@@ -387,9 +387,13 @@ function Footer() {
             HomeLab Architect — Design it before you buy it.
           </span>
         </div>
-        <div className="flex items-center gap-4 text-xs text-base-400">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-base-400">
           <Link to="/explore" className="hover:text-base-200 transition-colors">Explore</Link>
           <Link to="/about" className="hover:text-base-200 transition-colors">About</Link>
+          <Link to="/feedback" className="hover:text-base-200 transition-colors">Feedback</Link>
+          <Link to="/privacy" className="hover:text-base-200 transition-colors">Privacy</Link>
+          <Link to="/terms" className="hover:text-base-200 transition-colors">Terms</Link>
+          <Link to="/disclaimer" className="hover:text-base-200 transition-colors">Disclaimer</Link>
           <Link to="/app" className="hover:text-base-200 transition-colors">Launch</Link>
         </div>
       </div>
@@ -400,7 +404,7 @@ function Footer() {
 /* ---------- Page ---------- */
 export function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="public-page-scroll flex flex-col">
       <PublicHeader />
       <div className="flex-1">
         <Hero />

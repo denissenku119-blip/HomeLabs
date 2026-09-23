@@ -13,6 +13,16 @@ interface CustomHardwareModalProps {
   onAdd: (input: CustomHardwareInput) => void;
 }
 
+/** Keeps malformed or hostile input from poisoning stored project data. */
+const MAX_TEXT = 80;
+const MAX_NOTES = 500;
+
+function clampNumber(value: string, max: number): number {
+  const parsed = parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return Math.min(parsed, max);
+}
+
 const categoryOptions = CATEGORY_ORDER.filter((c) => c !== 'other').map((c) => ({
   value: c,
   label: CATEGORY_LABELS[c],
@@ -27,6 +37,8 @@ export function CustomHardwareModal({ open, onClose, onAdd }: CustomHardwareModa
   const [power, setPower] = useState('');
   const [storage, setStorage] = useState('');
   const [network, setNetwork] = useState('');
+  const [cpuCores, setCpuCores] = useState('');
+  const [ramGB, setRamGB] = useState('');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<{ name?: string; category?: string }>({});
 
@@ -40,16 +52,21 @@ export function CustomHardwareModal({ open, onClose, onAdd }: CustomHardwareModa
       return;
     }
 
+    const cores = clampNumber(cpuCores, 512);
+    const ram = clampNumber(ramGB, 8192);
+
     onAdd({
-      name: name.trim(),
-      manufacturer: manufacturer.trim() || 'Custom',
-      model: model.trim() || 'Custom',
+      name: name.trim().slice(0, MAX_TEXT),
+      manufacturer: manufacturer.trim().slice(0, MAX_TEXT) || 'Custom',
+      model: model.trim().slice(0, MAX_TEXT) || 'Custom',
       category: category as ComponentCategory,
-      price: parseFloat(price) || 0,
-      powerWatts: parseFloat(power) || 0,
-      storageTB: parseFloat(storage) || 0,
-      networkSpeedGbps: parseFloat(network) || 0,
-      notes: notes.trim() || undefined,
+      price: clampNumber(price, 1_000_000),
+      powerWatts: clampNumber(power, 100_000),
+      storageTB: clampNumber(storage, 10_000),
+      networkSpeedGbps: clampNumber(network, 1_000),
+      cpuCores: cores > 0 ? cores : undefined,
+      ramGB: ram > 0 ? ram : undefined,
+      notes: notes.trim().slice(0, MAX_NOTES) || undefined,
     });
 
     handleReset();
@@ -65,6 +82,8 @@ export function CustomHardwareModal({ open, onClose, onAdd }: CustomHardwareModa
     setPower('');
     setStorage('');
     setNetwork('');
+    setCpuCores('');
+    setRamGB('');
     setNotes('');
     setErrors({});
   };
@@ -147,6 +166,22 @@ export function CustomHardwareModal({ open, onClose, onAdd }: CustomHardwareModa
               placeholder="0"
               value={power}
               onChange={(e) => setPower(e.target.value)}
+            />
+            <Input
+              label="CPU cores"
+              type="number"
+              min="0"
+              placeholder="e.g. 8"
+              value={cpuCores}
+              onChange={(e) => setCpuCores(e.target.value)}
+            />
+            <Input
+              label="RAM (GB)"
+              type="number"
+              min="0"
+              placeholder="e.g. 32"
+              value={ramGB}
+              onChange={(e) => setRamGB(e.target.value)}
             />
             <Input
               label="Storage (TB)"

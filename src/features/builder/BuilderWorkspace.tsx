@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, PanelLeft, PanelRight, Plus, Gauge, Cpu } from 'lucide-react';
+import { ChevronDown, ChevronUp, PanelLeft, PanelRight, Plus, Gauge, Cpu, X } from 'lucide-react';
 import type { HardwareDefinition } from '@/types';
 import { useProjectState } from '@/hooks/useProjectState';
 import { HardwareLibrary } from '@/features/builder/HardwareLibrary';
@@ -37,6 +37,11 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
 
   const { project, selectedId, connectingFromId, pendingConnectionType, saved } = state;
   const { selectedComponent } = actions;
+
+  const customCount = useMemo(
+    () => project.components.filter((c) => c.hardwareDefinitionId.startsWith('custom-')).length,
+    [project.components]
+  );
 
   const metrics = useMemo(
     () => calculateProjectMetrics(project, { electricityCostPerKwh: project.electricityCostPerKwh }),
@@ -158,7 +163,7 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
   );
 
   return (
-    <div className="flex flex-col h-full min-h-[620px] bg-base-950">
+    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col bg-base-950 lg:h-full lg:min-h-0">
       <CustomHardwareModal
         open={customModalOpen}
         onClose={() => setCustomModalOpen(false)}
@@ -174,14 +179,28 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
       <div className="relative flex-1 flex min-h-0 flex-col lg:flex-row">
         <aside className="hidden lg:flex lg:w-64 xl:w-72 flex-shrink-0 border-r border-base-700 bg-base-900 min-h-0">
           <HardwareLibrary
+            customCount={customCount}
             onAdd={handleAddHardware}
             onAddCustom={() => setCustomModalOpen(true)}
           />
         </aside>
 
         {mobilePanel === 'library' && (
-          <div className="lg:hidden absolute inset-x-0 top-0 z-30 h-[min(70vh,520px)] bg-base-900 border-b border-base-700 shadow-elevated">
+          <div
+            className="lg:hidden absolute inset-x-0 top-0 z-30 h-[min(70dvh,520px)] bg-base-900 border-b border-base-700 shadow-elevated"
+            data-overlay="true"
+          >
+            <button
+              type="button"
+              data-close-overlay
+              aria-label="Close"
+              onClick={() => setMobilePanel(null)}
+              className="absolute end-2 top-2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-lg text-base-300 hover:text-base-50 hover:bg-base-800 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <HardwareLibrary
+              customCount={customCount}
               compact
               onAdd={handleAddHardware}
               onAddCustom={() => setCustomModalOpen(true)}
@@ -226,7 +245,19 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
         </aside>
 
         {mobilePanel === 'details' && (
-          <div className="lg:hidden absolute inset-x-0 bottom-0 z-30 max-h-[72vh] bg-base-900 border-t border-base-700 shadow-elevated flex flex-col">
+          <div
+            className="lg:hidden absolute inset-x-0 bottom-0 z-30 h-[72dvh] max-h-[72dvh] bg-base-900 border-t border-base-700 shadow-elevated flex flex-col"
+            data-overlay="true"
+          >
+            <button
+              type="button"
+              data-close-overlay
+              aria-label="Close"
+              onClick={() => setMobilePanel(null)}
+              className="absolute end-2 top-1 z-10 inline-flex items-center justify-center w-11 h-11 rounded-lg text-base-300 hover:text-base-50 hover:bg-base-800 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
             {tabBar}
             <div className="flex-1 min-h-0 overflow-hidden">
               {rightPanelContent}

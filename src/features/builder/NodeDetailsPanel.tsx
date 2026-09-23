@@ -65,7 +65,7 @@ function OverviewPanel({ components }: { components: ProjectComponent[] }) {
         <h2 className="text-sm font-semibold text-base-100">Architecture Overview</h2>
         <p className="text-2xs text-base-400 mt-0.5">Select a node to edit details</p>
       </div>
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 min-h-0 touch-scroll-y p-3 pb-24 lg:pb-3">
         {components.length === 0 ? (
           <div className="text-center py-8">
             <Cpu className="w-8 h-8 text-base-600 mx-auto mb-3" />
@@ -141,7 +141,8 @@ function DetailsEditor({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 min-h-0 touch-scroll-y p-3 pb-24 lg:pb-3">
+
         <div className="grid grid-cols-2 gap-2 mb-4">
           <QuickStat icon={<DollarSign className="w-3 h-3" />} label="Price" value={formatValue(component.price, (v) => formatCost(v, component.currency as Currency))} />
           <QuickStat icon={<Zap className="w-3 h-3" />} label="Power" value={formatValue(component.powerWatts, formatPower)} />

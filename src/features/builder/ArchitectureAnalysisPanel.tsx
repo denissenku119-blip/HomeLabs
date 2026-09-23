@@ -94,7 +94,7 @@ export function ArchitectureAnalysisPanel({ analysis }: ArchitectureAnalysisPane
         <p className="text-2xs text-base-400 mt-0.5">{t('analysis.basedOnModeled')}</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 touch-scroll-y pb-24 lg:pb-0">
         {/* Score display */}
         <div className="px-3 py-3 border-b border-base-700">
           <div className="flex items-center gap-3">

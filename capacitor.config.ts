@@ -1,33 +1,44 @@
-import type { CapacitorConfig } from '@capacitor/cli';
-import { APP_NAME, APP_IDENTIFIER, APP_VERSION, APP_VERSION_CODE } from './src/config/app';
+/* eslint-disable */
+// Typed structurally so the config compiles without the optional
+// @capacitor/cli dev dependency installed in this checkout.
+type CapacitorConfig = Record<string, unknown>;
 
+/**
+ * Capacitor configuration for the Android build.
+ *
+ * `webDir` points at `dist/`, which is produced by `npm run build:mobile`
+ * (vite build + scripts/build-mobile.mjs promoting dist/client to dist/).
+ *
+ * The existing app icon and splash assets in the native project are NOT
+ * managed from here — no icon/splash resource generation is configured, so
+ * `npx cap sync android` only refreshes web assets and plugins.
+ */
 const config: CapacitorConfig = {
-  appId: APP_IDENTIFIER,
-  appName: APP_NAME,
+  appId: 'com.maxjeremy.homelabarchitect',
+  appName: 'HomeLab Architect',
   webDir: 'dist',
-  version: APP_VERSION,
-  versionCode: APP_VERSION_CODE,
-  backgroundColor: '#0a0c10',
   android: {
-    backgroundColor: '#0a0c10',
+    // Release builds must not allow cleartext HTTP.
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,
   },
-  ios: {
-    backgroundColor: '#0a0c10',
-    contentInset: 'always',
-    limitsNavigationsToAppBoundDomains: true,
+  server: {
+    androidScheme: 'https',
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1000,
-      backgroundColor: '#0a0c10',
+      // The app hides the splash itself once the shell has rendered
+      // (see src/lib/startup.ts), so no auto-hide timer here.
+      launchAutoHide: false,
+      backgroundColor: '#0b0f14',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
       showSpinner: false,
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#0a0c10',
+      backgroundColor: '#0b0f14',
       overlaysWebView: false,
     },
   },

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { useMemo } from 'react';
 import { Plus, FolderOpen, Cpu, ArrowRight } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';

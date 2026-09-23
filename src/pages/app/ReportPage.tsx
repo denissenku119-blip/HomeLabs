@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate } from '@/lib/router-compat';
 import {
   ArrowLeft, Printer, Share2, Cpu, HardDrive, Network, Zap, Server, Box,
   CheckCircle2, AlertTriangle, Info, XCircle, Lightbulb, Gauge,
   DollarSign, TrendingUp, Layers, FileText,
 } from 'lucide-react';
 import type { ProjectComponent, Connection } from '@/types';
-import { loadProject } from '@/utils/projectStore';
+import { findProject } from '@/utils/projectLookup';
 import { calculateProjectMetrics } from '@/features/calculations/calculationEngine';
 import { analyzeArchitecture } from '@/features/analysis/analysisEngine';
 import { buildArchitectureReport } from '@/features/report/reportTypes';
@@ -64,7 +64,7 @@ export function ReportPage() {
 
   const report = useMemo<ArchitectureReport | null>(() => {
     if (!id) return null;
-    const project = loadProject(id);
+    const project = findProject(id);
     if (!project) return null;
     const metrics = calculateProjectMetrics(project, {
       electricityCostPerKwh: project.electricityCostPerKwh,
@@ -112,8 +112,13 @@ export function ReportPage() {
 
   const handleShare = async () => {
     await shareContent({
-      title: `${report.projectName} — Architecture Report`,
-      text: `HomeLab Architect report for ${report.projectName}: ${report.components.length} devices, health score ${report.health.score}/${report.health.maxScore}.`,
+      title: t('report.shareTitle', { project: report.projectName }),
+      text: t('report.shareSummary', {
+        project: report.projectName,
+        count: report.components.length,
+        score: report.health.score,
+        max: report.health.maxScore,
+      }),
     });
   };
 
@@ -141,10 +146,10 @@ export function ReportPage() {
         <button
           onClick={handleShare}
           className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-base-700 text-base-200 hover:text-base-50 hover:bg-base-800 transition-colors"
-          aria-label="Share report"
+          aria-label={t('report.shareReport')}
         >
           <Share2 className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Share</span>
+          <span className="hidden sm:inline">{t('common.share')}</span>
         </button>
       </div>
 

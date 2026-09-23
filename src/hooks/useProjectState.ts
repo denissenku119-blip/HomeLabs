@@ -9,6 +9,8 @@ import {
   createConnection,
   getSmartPlacement,
 } from '@/utils/projectStore';
+import { findProject } from '@/utils/projectLookup';
+import { setSaveStatus } from '@/features/project/saveStatusStore';
 import { getHardwareById } from '@/data/hardware';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
 import type { CreateProjectInput, CustomHardwareInput } from '@/types';
@@ -44,15 +46,24 @@ export function useProjectState(
   initialData?: CreateProjectInput | null
 ): { state: ProjectState; actions: ProjectActions } {
   const [project, setProject] = useState<Project>(() => {
-    if (initialData) {
-      return createProject(initialData);
-    }
-    return loadProject(projectId) ?? createProject({
-      name: 'Untitled Project',
-      goal: 'other',
-      experienceLevel: 'beginner',
-      currency: 'USD',
-    });
+    // An already saved project ALWAYS wins: browsers restore history state on
+    // reload, so trusting initialData first would wipe a saved project.
+    const existing = loadProject(projectId) ?? findProject(projectId);
+    if (existing) return { ...existing, id: projectId };
+    const created = initialData
+      ? createProject(initialData, projectId)
+      : createProject(
+          {
+            name: 'Untitled Project',
+            goal: 'other',
+            experienceLevel: 'beginner',
+            currency: 'USD',
+          },
+          projectId
+        );
+    // Persist immediately so the project exists in the list from creation on.
+    saveProject(created);
+    return created;
   });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -61,25 +72,59 @@ export function useProjectState(
   const [saved, setSaved] = useState(true);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestProject = useRef(project);
+  const pendingWrite = useRef(false);
+  const firstRun = useRef(true);
+
+  const flush = useCallback(() => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (!pendingWrite.current) return;
+    saveProject(latestProject.current);
+    pendingWrite.current = false;
+    setSaved(true);
+    setSaveStatus('saved');
+  }, []);
+
   useEffect(() => {
+    latestProject.current = project;
+    if (firstRun.current) {
+      // The initial state was already persisted at creation / load time.
+      firstRun.current = false;
+      return;
+    }
+    pendingWrite.current = true;
     setSaved(false);
+    setSaveStatus('saving');
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveProject(project);
+      saveProject(latestProject.current);
+      pendingWrite.current = false;
       setSaved(true);
+      setSaveStatus('saved');
     }, 600);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [project]);
 
+  // Never lose the last edits when leaving the workspace, hiding the app or
+  // closing the tab: write whatever is still pending immediately.
+  useEffect(() => {
+    const onHide = () => flush();
+    window.addEventListener('pagehide', onHide);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', onHide);
+      document.removeEventListener('visibilitychange', onHide);
+      flush();
+    };
+  }, [flush]);
+
   useAppLifecycle(() => {
-    if (saveTimer.current) {
-      clearTimeout(saveTimer.current);
-      saveTimer.current = null;
-    }
-    saveProject(project);
-    setSaved(true);
+    flush();
   });
 
   const addHardware = useCallback(

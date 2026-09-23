@@ -1,4 +1,4 @@
-import { isNative, getCapabilities } from './platform.service';
+import { getCapabilities } from './platform.service';
 
 export interface ShareOptions {
   title?: string;
@@ -16,7 +16,7 @@ export interface ShareResult {
 export async function shareContent(options: ShareOptions): Promise<ShareResult> {
   const caps = getCapabilities();
 
-  if (isNative && caps.nativeShare) {
+  if (caps.nativeShare) {
     try {
       const { Share } = await import('@capacitor/share');
       await Share.share({

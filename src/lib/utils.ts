@@ -1,4 +1,4 @@
-export const cn = (...classes: (string | false | null | undefined | 0)[]) =>
+export const cn = (...classes: unknown[]): string =>
   classes.filter(Boolean).join(' ');
 
 export const formatCurrency = (amount: number, currency: string = 'USD'): string => {

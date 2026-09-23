@@ -100,7 +100,7 @@ export function ProjectSummary({
 
       {/* Expanded detail panel */}
       {expandedMetric && (
-        <div className="px-3 sm:px-4 py-3 border-t border-base-700 bg-base-850 max-h-[280px] overflow-y-auto">
+        <div className="px-3 sm:px-4 py-3 border-t border-base-700 bg-base-850 max-h-[280px] touch-scroll-y">
           {expandedMetric === 'investment' && <InvestmentDetail metrics={metrics} currency={currency} />}
           {expandedMetric === 'power' && <PowerDetail metrics={metrics} />}
           {expandedMetric === 'energy' && <EnergyDetail metrics={metrics} currency={currency} />}

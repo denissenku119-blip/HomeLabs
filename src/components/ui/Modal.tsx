@@ -20,11 +20,19 @@ const sizeClasses = {
 export function Modal({ open, onClose, title, children, footer, size = 'md' }: ModalProps) {
   useEffect(() => {
     if (!open) return;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -40,7 +48,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: M
       <div
         className={cn(
           'relative w-full bg-base-900 border border-base-700 rounded-xl shadow-elevated animate-slide-up',
-          'flex flex-col max-h-[85vh]',
+          'flex flex-col max-h-[85dvh]',
           sizeClasses[size]
         )}
       >
@@ -56,7 +64,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: M
             </button>
           </div>
         )}
-        <div className="px-6 py-5 overflow-y-auto">{children}</div>
+        <div className="px-6 py-5 flex-1 min-h-0 overflow-y-auto overscroll-contain">{children}</div>
         {footer && (
           <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-base-700">
             {footer}

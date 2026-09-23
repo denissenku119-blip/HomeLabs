@@ -1,9 +1,11 @@
-import { Link } from 'react-router-dom';
-import { Cpu, HardDrive, Network, Zap, Server, Shield, Box } from 'lucide-react';
+import { Link } from '@/lib/router-compat';
+import { useEffect, useRef, useState } from 'react';
+import { Cpu, HardDrive, Network, Zap, Server, Shield, Box, MoreVertical, Trash2, Pencil } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import type { ProjectComponent, ComponentCategory } from '@/types';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/i18n/I18nContext';
 
 interface ProjectCardProps {
   id: string;
@@ -12,6 +14,8 @@ interface ProjectCardProps {
   components: ProjectComponent[];
   estimatedCost: number;
   onClick?: () => void;
+  onDelete?: () => void;
+  onRename?: () => void;
 }
 
 const categoryIcons: Record<ComponentCategory, React.ElementType> = {
@@ -31,9 +35,25 @@ export function ProjectCard({
   components,
   estimatedCost,
   onClick,
+  onDelete,
+  onRename,
 }: ProjectCardProps) {
+  const { t } = useI18n();
   const componentCount = components.length;
   const totalPower = components.reduce((sum, c) => sum + (c.powerWatts || 0), 0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handlePointer = (event: PointerEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointer);
+    return () => document.removeEventListener('pointerdown', handlePointer);
+  }, [menuOpen]);
 
   const statusVariant = status === 'draft' ? 'default' : 'accent';
 
@@ -48,6 +68,63 @@ export function ProjectCard({
             {status.charAt(0).toUpperCase() + status.slice(1)}
           </Badge>
         </div>
+        {(onDelete || onRename) && (
+          <div className="relative flex-shrink-0" ref={menuRef}>
+            <button
+              type="button"
+              aria-label="Project actions"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="p-1.5 -me-1.5 rounded-md text-base-400 hover:text-base-100 hover:bg-base-800 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMenuOpen((open) => !open);
+              }}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute end-0 top-9 z-20 min-w-40 rounded-lg border border-base-700 bg-base-900 shadow-elevated py-1"
+              >
+                {onRename && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-base-200 hover:bg-base-800 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      onRename();
+                    }}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Rename project
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-xs text-danger-400 hover:bg-base-800 transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      onDelete();
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete project
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -67,7 +144,7 @@ export function ProjectCard({
               )}
             >
               <Icon className="w-3 h-3" />
-              {cat}
+              {t(`hardware.${cat}`)}
             </span>
           );
         })}

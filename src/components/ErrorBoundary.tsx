@@ -1,5 +1,6 @@
-import { Component, type ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { Component, type ReactNode } from "react";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { getStartupStage, logRuntimeError } from "@/lib/runtime-diagnostics";
 
 interface Props {
   children: ReactNode;
@@ -19,9 +20,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught:', error, info);
-    }
+    logRuntimeError(error, {
+      stage: getStartupStage(),
+      service: "ReactErrorBoundary",
+      componentStack: info.componentStack ?? undefined,
+    });
   }
 
   handleReload = () => {
@@ -29,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   render() {
@@ -44,13 +47,21 @@ export class ErrorBoundary extends Component<Props, State> {
                 <AlertTriangle className="w-7 h-7 text-danger-400" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-base-50">
-                  Something went wrong
-                </h1>
+                <h1 className="text-lg font-semibold text-base-50">Something went wrong</h1>
                 <p className="text-sm text-base-300 mt-1.5 leading-relaxed">
-                  An unexpected error occurred. Your projects are safely stored and
-                  will be available after reloading.
+                  An unexpected error occurred. Your projects are safely stored and will be
+                  available after reloading.
                 </p>
+                {import.meta.env.DEV && this.state.error && (
+                  <details className="mt-4 max-h-52 overflow-auto rounded-lg border border-base-700 bg-base-900 p-3 text-left">
+                    <summary className="cursor-pointer text-xs font-medium text-base-200">
+                      Development diagnostics
+                    </summary>
+                    <pre className="mt-2 whitespace-pre-wrap break-words text-2xs text-danger-400">
+                      {`${this.state.error.name}: ${this.state.error.message}\nStage: ${getStartupStage()}\n${this.state.error.stack ?? ""}`}
+                    </pre>
+                  </details>
+                )}
               </div>
               <div className="flex items-center gap-3 mt-2">
                 <button

@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
-import { Search, Check, X, Globe } from 'lucide-react';
-import { useI18n } from '@/i18n/I18nContext';
-import { LANGUAGES } from '@/i18n/languages';
-import { cn } from '@/lib/utils';
+import { useState, useMemo } from "react";
+import { Search, Check, X, Globe } from "lucide-react";
+import { useI18n } from "@/i18n/I18nContext";
+import { LANGUAGES } from "@/i18n/languages";
+import { cn } from "@/lib/utils";
 
 interface LanguagePickerProps {
   open: boolean;
@@ -11,18 +11,18 @@ interface LanguagePickerProps {
 
 export function LanguagePicker({ open, onClose }: LanguagePickerProps) {
   const { langId, setLanguage, t } = useI18n();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [pendingLang, setPendingLang] = useState(langId);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return LANGUAGES.filter((l) => l.enabled);
-    return LANGUAGES.filter((l) =>
-      l.enabled && (
-        l.nativeName.toLowerCase().includes(q) ||
-        l.englishName.toLowerCase().includes(q) ||
-        l.id.toLowerCase().includes(q)
-      )
+    return LANGUAGES.filter(
+      (l) =>
+        l.enabled &&
+        (l.nativeName.toLowerCase().includes(q) ||
+          l.englishName.toLowerCase().includes(q) ||
+          l.id.toLowerCase().includes(q)),
     );
   }, [search]);
 
@@ -34,7 +34,14 @@ export function LanguagePicker({ open, onClose }: LanguagePickerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-base-950/80 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-base-950/80 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("settings.changeLanguage")}
+      data-overlay="true"
+    >
       <div
         className="w-full max-w-md rounded-xl border border-base-700 bg-base-900 shadow-elevated overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -43,12 +50,13 @@ export function LanguagePicker({ open, onClose }: LanguagePickerProps) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-base-700">
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4 text-accent" />
-            <h3 className="text-sm font-semibold text-base-100">{t('settings.changeLanguage')}</h3>
+            <h3 className="text-sm font-semibold text-base-100">{t("settings.changeLanguage")}</h3>
           </div>
           <button
             onClick={onClose}
+            data-close-overlay
             className="text-base-400 hover:text-base-200 transition-colors"
-            aria-label={t('common.close')}
+            aria-label={t("common.close")}
           >
             <X className="w-4 h-4" />
           </button>
@@ -61,9 +69,9 @@ export function LanguagePicker({ open, onClose }: LanguagePickerProps) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('onboarding.searchPlaceholder')}
+            placeholder={t("onboarding.searchPlaceholder")}
             className="w-full ps-9 pe-3 py-2 text-sm rounded-lg bg-base-850 border border-base-700 text-base-100 placeholder:text-base-500 focus:outline-none focus:border-accent transition-colors"
-            aria-label={t('onboarding.searchPlaceholder')}
+            aria-label={t("onboarding.searchPlaceholder")}
           />
         </div>
 
@@ -74,26 +82,28 @@ export function LanguagePicker({ open, onClose }: LanguagePickerProps) {
               key={lang.id}
               onClick={() => setPendingLang(lang.id)}
               className={cn(
-                'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors border-b border-base-800 last:border-0',
-                pendingLang === lang.id ? 'bg-accent/10' : 'hover:bg-base-850'
+                "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors border-b border-base-800 last:border-0",
+                pendingLang === lang.id ? "bg-accent/10" : "hover:bg-base-850",
               )}
               aria-pressed={pendingLang === lang.id}
             >
               <div className="flex-1 min-w-0">
-                <p className={cn(
-                  'text-sm font-medium',
-                  pendingLang === lang.id ? 'text-accent' : 'text-base-100'
-                )}>
+                <p
+                  className={cn(
+                    "text-sm font-medium",
+                    pendingLang === lang.id ? "text-accent" : "text-base-100",
+                  )}
+                >
                   {lang.nativeName}
                 </p>
                 <p className="text-2xs text-base-400">
                   {lang.englishName}
-                  {lang.direction === 'rtl' && <span className="ms-2 badge">{t('settings.rtl')}</span>}
+                  {lang.direction === "rtl" && (
+                    <span className="ms-2 badge">{t("settings.rtl")}</span>
+                  )}
                 </p>
               </div>
-              {pendingLang === lang.id && (
-                <Check className="w-4 h-4 text-accent flex-shrink-0" />
-              )}
+              {pendingLang === lang.id && <Check className="w-4 h-4 text-accent flex-shrink-0" />}
             </button>
           ))}
         </div>
@@ -104,13 +114,13 @@ export function LanguagePicker({ open, onClose }: LanguagePickerProps) {
             onClick={onClose}
             className="px-3 py-1.5 text-xs font-medium rounded-lg text-base-300 hover:text-base-100 transition-colors"
           >
-            {t('common.cancel')}
+            {t("common.cancel")}
           </button>
           <button
             onClick={handleConfirm}
             className="px-3 py-1.5 text-xs font-medium rounded-lg bg-accent text-base-950 hover:bg-accent-400 transition-colors"
           >
-            {t('common.save')}
+            {t("common.save")}
           </button>
         </div>
       </div>

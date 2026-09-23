@@ -4,6 +4,8 @@ import type { ProjectComponent, ComponentCategory } from '@/types';
 import { cn } from '@/lib/utils';
 import { formatPower, formatStorage, formatCost, formatNetwork } from '@/utils/calculations';
 
+const DRAG_THRESHOLD = 5;
+
 const iconMap: Record<ComponentCategory, React.ElementType> = {
   compute: Cpu,
   storage: HardDrive,
@@ -18,10 +20,13 @@ interface CanvasNodeProps {
   component: ProjectComponent;
   selected: boolean;
   isConnectingFrom: boolean;
+  isConnecting?: boolean;
   scale: number;
   onSelect: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
   onStartConnecting: (id: string) => void;
+  onCompleteConnecting?: (id: string) => void;
+  onCancelConnecting?: () => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
 }
@@ -30,10 +35,13 @@ export function CanvasNode({
   component,
   selected,
   isConnectingFrom,
+  isConnecting = false,
   scale,
   onSelect,
   onMove,
   onStartConnecting,
+  onCompleteConnecting,
+  onCancelConnecting,
   onDelete,
   onDuplicate,
 }: CanvasNodeProps) {
@@ -50,7 +58,6 @@ export function CanvasNode({
   const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     e.stopPropagation();
-    onSelect(component.instanceId);
     dragState.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -58,24 +65,57 @@ export function CanvasNode({
       origY: component.y,
       moved: false,
     };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // pointer capture is optional
+    }
   };
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!dragState.current) return;
     const dx = (e.clientX - dragState.current.startX) / scale;
     const dy = (e.clientY - dragState.current.startY) / scale;
-    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-      dragState.current.moved = true;
+    // Small movement threshold: below it the gesture stays a tap, above it the
+    // node is dragged instead of opening the details panel.
+    if (!dragState.current.moved && Math.abs(dx) * scale < DRAG_THRESHOLD && Math.abs(dy) * scale < DRAG_THRESHOLD) {
+      return;
     }
+    dragState.current.moved = true;
+    e.stopPropagation();
     onMove(component.instanceId, dragState.current.origX + dx, dragState.current.origY + dy);
   };
 
   const handlePointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (dragState.current) {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-      dragState.current = null;
+    if (!dragState.current) return;
+    const wasTap = !dragState.current.moved;
+    dragState.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // pointer capture is optional
     }
+    if (wasTap) {
+      e.stopPropagation();
+      onSelect(component.instanceId);
+    }
+  };
+
+  const handlePointerCancel = () => {
+    dragState.current = null;
+  };
+
+  const handleHandleActivate = () => {
+    dragState.current = null;
+    if (isConnectingFrom) {
+      onCancelConnecting?.();
+      return;
+    }
+    if (isConnecting) {
+      onCompleteConnecting?.(component.instanceId);
+      return;
+    }
+    onStartConnecting(component.instanceId);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -110,7 +150,7 @@ export function CanvasNode({
   return (
     <div
       className={cn(
-        'absolute select-none rounded-lg border bg-base-850 shadow-elevated transition-shadow',
+        'absolute z-10 select-none rounded-lg border bg-base-850 shadow-elevated transition-shadow',
         'w-[140px] cursor-grab active:cursor-grabbing group',
         selected
           ? 'border-accent ring-2 ring-accent/40 shadow-glow'
@@ -124,9 +164,11 @@ export function CanvasNode({
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
+      data-node-id={component.instanceId}
       aria-label={`${component.name} node. Use arrow keys to move. Delete to remove.`}
     >
       <div className="flex items-center gap-2 px-2.5 py-2 border-b border-base-700">
@@ -203,19 +245,71 @@ export function CanvasNode({
         </button>
       </div>
 
-      <div
-        className={cn(
-          'absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 transition-colors',
-          isConnectingFrom ? 'bg-accent border-accent' : 'bg-base-600 border-base-500'
-        )}
+      <ConnectHandle
+        componentId={component.instanceId}
+        position="top"
+        active={isConnectingFrom}
+        connecting={isConnecting}
+        onActivate={handleHandleActivate}
       />
-      <div
-        className={cn(
-          'absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full border-2 transition-colors',
-          'bg-base-600 border-base-500'
-        )}
+      <ConnectHandle
+        componentId={component.instanceId}
+        position="bottom"
+        active={isConnectingFrom}
+        connecting={isConnecting}
+        onActivate={handleHandleActivate}
       />
     </div>
+  );
+}
+
+function ConnectHandle({
+  componentId,
+  position,
+  active,
+  connecting,
+  onActivate,
+}: {
+  componentId: string;
+  position: 'top' | 'bottom';
+  active: boolean;
+  connecting: boolean;
+  onActivate: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      // Large transparent hit area (44px) keeps the visible dot small while
+      // staying comfortably tappable on phones.
+      className={cn(
+        'absolute left-1/2 -translate-x-1/2 flex items-center justify-center w-11 h-11 rounded-full',
+        'bg-transparent',
+        position === 'top' ? '-top-[22px]' : '-bottom-[22px]'
+      )}
+      style={{ touchAction: 'none' }}
+      data-connection-node={position}
+      data-component-id={componentId}
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => {
+        e.stopPropagation();
+        onActivate();
+      }}
+      onClick={(e) => e.stopPropagation()}
+      title={active ? 'Cancel connection' : connecting ? 'Connect to this node' : 'Connect from this node'}
+      aria-label={active ? 'Cancel connection' : connecting ? 'Connect to this node' : 'Start connection from this node'}
+    >
+      <span
+        className={cn(
+          'block rounded-full border-2 transition-all',
+          active
+            ? 'w-4.5 h-4.5 bg-accent border-accent shadow-glow ring-4 ring-accent/25'
+            : connecting
+              ? 'w-4 h-4 bg-success-500 border-success-400 animate-pulse'
+              : 'w-3.5 h-3.5 bg-base-700 border-accent/60'
+        )}
+      />
+
+    </button>
   );
 }
 
