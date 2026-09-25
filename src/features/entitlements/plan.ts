@@ -10,7 +10,7 @@
  * confirms ownership, and is cleared whenever billing reports no purchase.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { queryProEntitlement, type EntitlementResult } from './billing';
+import { purchasePro, queryProEntitlement, type EntitlementResult } from './billing';
 
 export type Plan = 'free' | 'pro';
 
@@ -88,7 +88,16 @@ function cacheVerifiedPlan(plan: Plan): void {
  */
 export async function refreshEntitlement(): Promise<EntitlementResult> {
   const result = await queryProEntitlement();
-  if (result.billingAvailable) cacheVerifiedPlan(result.entitled ? 'pro' : 'free');
+  // Only overwrite the cache on a definitive answer from Google Play.
+  if (result.billingAvailable && (!result.error || result.error === 'PENDING'))
+    cacheVerifiedPlan(result.entitled ? 'pro' : 'free');
+  return result;
+}
+
+/** Launch the Google Play purchase and cache the verified outcome. */
+export async function buyPro(): Promise<EntitlementResult> {
+  const result = await purchasePro();
+  if (result.entitled) cacheVerifiedPlan('pro');
   return result;
 }
 

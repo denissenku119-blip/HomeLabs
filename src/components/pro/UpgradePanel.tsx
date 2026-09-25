@@ -1,7 +1,13 @@
+import { useEffect, useState } from 'react';
 import { Check, Crown, Lock } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { PRO_BENEFITS, PRO_PRICE_LABEL } from '@/features/entitlements/plan';
+import { PRO_BENEFITS, buyPro } from '@/features/entitlements/plan';
+import {
+  getProProductDetails,
+  isBillingAvailable,
+  type ProProductDetails,
+} from '@/features/entitlements/billing';
 import { useI18n } from '@/i18n/I18nContext';
 
 interface UpgradePanelProps {
@@ -12,6 +18,39 @@ interface UpgradePanelProps {
 
 export function UpgradePanel({ reason, onClose }: UpgradePanelProps) {
   const { t } = useI18n();
+  const [billing, setBilling] = useState(false);
+  const [product, setProduct] = useState<ProProductDetails | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const available = isBillingAvailable();
+    setBilling(available);
+    if (!available) return;
+    let active = true;
+    void getProProductDetails().then((details) => {
+      if (!active) return;
+      setProduct(details);
+      if (!details) setMessage(t('pro.err.PRODUCT_NOT_FOUND'));
+    });
+    return () => {
+      active = false;
+    };
+  }, [t]);
+
+  const handleBuy = async () => {
+    setBusy(true);
+    setMessage(null);
+    const result = await buyPro();
+    setBusy(false);
+    if (result.entitled) {
+      setMessage(t('pro.restored'));
+      onClose?.();
+    } else if (result.error) {
+      setMessage(t(`pro.err.${result.error}`));
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start gap-3">
@@ -21,7 +60,11 @@ export function UpgradePanel({ reason, onClose }: UpgradePanelProps) {
         <div>
           <h2 className="text-base font-bold text-base-50">{t('pro.title')}</h2>
           <p className="text-sm font-semibold text-accent mt-0.5">
-            {t('pro.price')}
+            {billing
+              ? product
+                ? `${product.formattedPrice} — ${t('pro.oneTime')}`
+                : t('pro.oneTime')
+              : t('pro.price')}
           </p>
           {reason && <p className="text-xs text-base-300 mt-1.5">{reason}</p>}
         </div>
@@ -38,16 +81,27 @@ export function UpgradePanel({ reason, onClose }: UpgradePanelProps) {
 
       <p className="flex items-start gap-2 text-2xs text-base-400">
         <Lock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-        {t('pro.checkout')}
+        {billing ? t('pro.playCheckout') : t('pro.checkout')}
       </p>
 
-      {onClose && (
-        <div className="flex justify-end">
+      {message && (
+        <p className="text-2xs text-base-300" role="status" aria-live="polite">
+          {message}
+        </p>
+      )}
+
+      <div className="flex justify-end gap-2">
+        {onClose && (
           <Button variant="ghost" onClick={onClose}>
             {t('pro.continueFree')}
           </Button>
-        </div>
-      )}
+        )}
+        {billing && product && (
+          <Button onClick={handleBuy} disabled={busy} leftIcon={<Crown className="w-4 h-4" />}>
+            {busy ? t('pro.processing') : t('pro.buy', { price: product.formattedPrice })}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

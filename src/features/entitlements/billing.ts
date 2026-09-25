@@ -1,75 +1,130 @@
 /**
- * Pro entitlement source of truth.
+ * Pro entitlement source of truth — Google Play Billing.
  *
- * Pro is unlocked ONLY by a valid Google Play purchase of the one-time
- * lifetime product below. Nothing else — no shared link, referral, UTM
- * parameter, project data or hand-written storage value — may grant it.
+ * Pro is unlocked ONLY by a Google Play purchase of the one-time product below.
+ * Nothing else — shared links, referrals, UTM parameters, project data or
+ * hand-written storage values — may grant it.
  *
- * Google Play Billing is not connected in this build. Until it is, this module
- * always reports "no entitlement, billing unavailable", and the rest of the app
- * treats that as Free. When billing is added, only `queryProEntitlement` and
- * `purchasePro` need a real implementation.
+ * SECURITY NOTE: ownership is currently checked on-device only (the native
+ * GooglePlayBilling plugin asks the Play Store). This is not tamper-proof.
+ * Production-grade verification requires a server that validates the
+ * purchase token with the Google Play Developer API.
  */
-import { isNativePlatform } from '@/services/platform.service';
+import { registerPlugin } from '@capacitor/core';
+import { isNativePlatform, isPluginAvailable } from '@/services/platform.service';
 
-/** Google Play in-app product for the $29.99 one-time lifetime unlock. */
-export const PRO_PRODUCT_ID = 'homelab_architect_pro_lifetime';
+/** Google Play one-time in-app product (not a subscription). */
+export const PRO_PRODUCT_ID = 'homelab_premium';
+
+export type BillingErrorCode =
+  | 'BILLING_UNAVAILABLE'
+  | 'PRODUCT_NOT_FOUND'
+  | 'USER_CANCELED'
+  | 'PURCHASE_FAILED'
+  | 'PENDING'
+  | 'ALREADY_OWNED'
+  | 'NETWORK_ERROR';
 
 export interface EntitlementResult {
-  /** True only when Google Play confirms an owned, valid Pro purchase. */
+  /** True only when Google Play reports an owned, completed Pro purchase. */
   entitled: boolean;
   /** False when no billing client is present in this build/runtime. */
   billingAvailable: boolean;
+  /** Set when a purchase/restore did not unlock Pro. */
+  error?: BillingErrorCode;
 }
 
-interface BillingBridge {
-  getPurchases?: () => Promise<{ purchases?: { productId?: string }[] } | undefined>;
-  purchase?: (options: { productId: string }) => Promise<{ purchased?: boolean } | undefined>;
+export interface ProProductDetails {
+  productId: string;
+  title: string;
+  description: string;
+  /** Localized price string exactly as returned by Google Play. */
+  formattedPrice: string;
+  priceAmountMicros: number;
+  priceCurrencyCode: string;
 }
 
-function getBillingBridge(): BillingBridge | null {
+interface NativePurchase {
+  products: string[];
+  state: 'PURCHASED' | 'PENDING' | 'UNSPECIFIED';
+  acknowledged: boolean;
+  purchaseToken: string;
+  orderId?: string;
+  purchaseTime: number;
+}
+
+interface GooglePlayBillingPlugin {
+  isReady(): Promise<{ ready: boolean }>;
+  getProduct(options: { productId: string }): Promise<ProProductDetails>;
+  purchase(options: { productId: string }): Promise<NativePurchase>;
+  getPurchases(): Promise<{ purchases: NativePurchase[] }>;
+}
+
+const GooglePlayBilling = registerPlugin<GooglePlayBillingPlugin>('GooglePlayBilling');
+
+const KNOWN_CODES: BillingErrorCode[] = [
+  'BILLING_UNAVAILABLE',
+  'PRODUCT_NOT_FOUND',
+  'USER_CANCELED',
+  'PURCHASE_FAILED',
+  'PENDING',
+  'ALREADY_OWNED',
+  'NETWORK_ERROR',
+];
+
+function toErrorCode(error: unknown): BillingErrorCode {
+  const code = (error as { code?: unknown } | null)?.code;
+  return typeof code === 'string' && (KNOWN_CODES as string[]).includes(code)
+    ? (code as BillingErrorCode)
+    : 'PURCHASE_FAILED';
+}
+
+export function isBillingAvailable(): boolean {
+  return isNativePlatform() && isPluginAvailable('GooglePlayBilling');
+}
+
+/** Localized product details from Google Play. Never a hard-coded price. */
+export async function getProProductDetails(): Promise<ProProductDetails | null> {
+  if (!isBillingAvailable()) return null;
   try {
-    if (!isNativePlatform()) return null;
-    const plugins = (
-      window as unknown as { Capacitor?: { Plugins?: Record<string, BillingBridge> } }
-    ).Capacitor?.Plugins;
-    const bridge = plugins?.['GooglePlayBilling'];
-    return bridge && typeof bridge === 'object' ? bridge : null;
+    return await GooglePlayBilling.getProduct({ productId: PRO_PRODUCT_ID });
   } catch {
     return null;
   }
 }
 
-export function isBillingAvailable(): boolean {
-  const bridge = getBillingBridge();
-  return !!bridge && typeof bridge.getPurchases === 'function';
-}
-
-/** Ask Google Play whether this account owns the lifetime Pro product. */
+/** Ask Google Play whether this account owns the Pro product (restore path). */
 export async function queryProEntitlement(): Promise<EntitlementResult> {
-  const bridge = getBillingBridge();
-  if (!bridge || typeof bridge.getPurchases !== 'function') {
-    return { entitled: false, billingAvailable: false };
-  }
+  if (!isBillingAvailable()) return { entitled: false, billingAvailable: false };
   try {
-    const result = await bridge.getPurchases();
-    const owned = (result?.purchases ?? []).some((p) => p.productId === PRO_PRODUCT_ID);
-    return { entitled: owned, billingAvailable: true };
-  } catch {
+    const { purchases } = await GooglePlayBilling.getPurchases();
+    const mine = (purchases ?? []).filter((p) => p.products?.includes(PRO_PRODUCT_ID));
+    if (mine.some((p) => p.state === 'PURCHASED')) return { entitled: true, billingAvailable: true };
+    if (mine.some((p) => p.state === 'PENDING'))
+      return { entitled: false, billingAvailable: true, error: 'PENDING' };
     return { entitled: false, billingAvailable: true };
+  } catch (error) {
+    const code = toErrorCode(error);
+    return { entitled: false, billingAvailable: code !== 'BILLING_UNAVAILABLE', error: code };
   }
 }
 
-/** Entry point a future Google Play Billing integration plugs into. */
+/** Launch the Google Play purchase flow for the one-time Pro product. */
 export async function purchasePro(): Promise<EntitlementResult> {
-  const bridge = getBillingBridge();
-  if (!bridge || typeof bridge.purchase !== 'function') {
-    return { entitled: false, billingAvailable: false };
-  }
+  if (!isBillingAvailable())
+    return { entitled: false, billingAvailable: false, error: 'BILLING_UNAVAILABLE' };
   try {
-    await bridge.purchase({ productId: PRO_PRODUCT_ID });
-  } catch {
-    return { entitled: false, billingAvailable: true };
+    const purchase = await GooglePlayBilling.purchase({ productId: PRO_PRODUCT_ID });
+    if (purchase.state === 'PENDING')
+      return { entitled: false, billingAvailable: true, error: 'PENDING' };
+    return queryProEntitlement();
+  } catch (error) {
+    const code = toErrorCode(error);
+    // Already owned: re-sync from Google Play so the owner gets Pro back.
+    if (code === 'ALREADY_OWNED') {
+      const restored = await queryProEntitlement();
+      return { ...restored, error: restored.entitled ? undefined : 'ALREADY_OWNED' };
+    }
+    return { entitled: false, billingAvailable: code !== 'BILLING_UNAVAILABLE', error: code };
   }
-  return queryProEntitlement();
 }

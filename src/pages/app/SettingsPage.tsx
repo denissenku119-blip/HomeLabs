@@ -101,6 +101,8 @@ export function SettingsPage() {
   const handleRestore = async () => {
     const result = await restorePurchase();
     if (result.entitled) setRestoreMessage(t("pro.restored"));
+    else if (result.error && result.error !== "BILLING_UNAVAILABLE")
+      setRestoreMessage(t(`pro.err.${result.error}`));
     else if (result.billingAvailable)
       setRestoreMessage(t("pro.notFound"));
     else setRestoreMessage(t("pro.unavailable"));
