@@ -227,7 +227,7 @@ const COMPONENT_DEFAULTS = {
   hasOverrides: false,
 };
 
-function normalizeProject(raw: unknown): Project | null {
+export function normalizeProject(raw: unknown): Project | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
   // A missing name must never discard a saved project — only a missing id can.

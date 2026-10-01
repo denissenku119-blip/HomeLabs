@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronUp, PanelLeft, PanelRight, Plus, Gauge, Cpu, X } from 'lucide-react';
 import type { HardwareDefinition } from '@/types';
-import { useProjectState } from '@/hooks/useProjectState';
+import { useProjectState, type ProjectStorage } from '@/hooks/useProjectState';
 import { HardwareLibrary } from '@/features/builder/HardwareLibrary';
 import { CustomHardwareModal } from '@/features/builder/CustomHardwareModal';
 import { ArchitectureCanvas } from '@/features/builder/ArchitectureCanvas';
@@ -20,13 +20,17 @@ import type { CreateProjectInput, CustomHardwareInput } from '@/types';
 interface BuilderWorkspaceProps {
   projectId: string;
   initialData?: CreateProjectInput | null;
+  /** Alternative persistence (used by My Lab). Defaults to the project store. */
+  storage?: ProjectStorage;
+  /** Component to select once on open (used by My Lab findings). */
+  focusId?: string | null;
 }
 
 type RightPanelTab = 'component' | 'analysis';
 
-export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspaceProps) {
+export function BuilderWorkspace({ projectId, initialData, storage, focusId }: BuilderWorkspaceProps) {
   const { t } = useI18n();
-  const { state, actions } = useProjectState(projectId, initialData);
+  const { state, actions } = useProjectState(projectId, initialData, storage);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
@@ -87,6 +91,11 @@ export function BuilderWorkspace({ projectId, initialData }: BuilderWorkspacePro
       setMobilePanel('details');
     }
   };
+
+  useEffect(() => {
+    if (focusId && project.components.some((c) => c.instanceId === focusId)) handleSelect(focusId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
 
   const panelButton = (panel: 'library' | 'details', label: string, icon: React.ReactNode) => (
     <button

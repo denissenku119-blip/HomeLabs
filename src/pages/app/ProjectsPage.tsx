@@ -9,7 +9,8 @@ import { ProjectCard } from '@/components/ui/ProjectCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { DeleteProjectDialog } from '@/components/ui/DeleteProjectDialog';
 import { RenameProjectDialog } from '@/components/ui/RenameProjectDialog';
-import { mockProjects } from '@/data/mockData';
+import { getDemoProjects } from '@/data/mockData';
+import { usePlan } from '@/features/entitlements/plan';
 import { getProject, getProjects, deleteProjectRepo, saveProjectRepo } from '@/repositories/projectRepository';
 import { calculateAnalysis } from '@/utils/calculations';
 import { useI18n } from '@/i18n/I18nContext';
@@ -33,7 +34,8 @@ export function ProjectsPage() {
     [pendingRename],
   );
 
-  const projects = [...savedProjects, ...mockProjects];
+  const { isPro } = usePlan();
+  const projects = [...savedProjects, ...getDemoProjects(isPro)];
   const savedIds = new Set(savedProjects.map((p) => p.id));
 
   const confirmDelete = useCallback(() => {

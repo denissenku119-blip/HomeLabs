@@ -41,14 +41,31 @@ export interface ProjectActions {
   selectedComponent: ProjectComponent | null;
 }
 
+/**
+ * Optional persistence override. Projects use the default project store; My Lab
+ * passes its own store so it never enters the project list.
+ */
+export interface ProjectStorage {
+  load: (id: string) => Project | null;
+  save: (project: Project) => void;
+}
+
+const defaultStorage: ProjectStorage = {
+  load: (id) => loadProject(id) ?? findProject(id),
+  save: saveProject,
+};
+
 export function useProjectState(
   projectId: string,
-  initialData?: CreateProjectInput | null
+  initialData?: CreateProjectInput | null,
+  storage: ProjectStorage = defaultStorage
 ): { state: ProjectState; actions: ProjectActions } {
+  const storageRef = useRef(storage);
+  storageRef.current = storage;
   const [project, setProject] = useState<Project>(() => {
     // An already saved project ALWAYS wins: browsers restore history state on
     // reload, so trusting initialData first would wipe a saved project.
-    const existing = loadProject(projectId) ?? findProject(projectId);
+    const existing = storage.load(projectId);
     if (existing) return { ...existing, id: projectId };
     const created = initialData
       ? createProject(initialData, projectId)
@@ -62,7 +79,7 @@ export function useProjectState(
           projectId
         );
     // Persist immediately so the project exists in the list from creation on.
-    saveProject(created);
+    storage.save(created);
     return created;
   });
 
@@ -82,7 +99,7 @@ export function useProjectState(
       saveTimer.current = null;
     }
     if (!pendingWrite.current) return;
-    saveProject(latestProject.current);
+    storageRef.current.save(latestProject.current);
     pendingWrite.current = false;
     setSaved(true);
     setSaveStatus('saved');
@@ -100,7 +117,7 @@ export function useProjectState(
     setSaveStatus('saving');
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveProject(latestProject.current);
+      storageRef.current.save(latestProject.current);
       pendingWrite.current = false;
       setSaved(true);
       setSaveStatus('saved');

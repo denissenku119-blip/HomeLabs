@@ -20,6 +20,15 @@ import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppNewRouteImport } from './routes/app/new'
 import { Route as AppProjectsRouteImport } from './routes/app/projects'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
+import { Route as AppMyLabIndexRouteImport } from './routes/app/my-lab/index'
+import { Route as AppMyLabChecksRouteImport } from './routes/app/my-lab/checks'
+import { Route as AppMyLabHealthRouteImport } from './routes/app/my-lab/health'
+import { Route as AppMyLabHistoryRouteImport } from './routes/app/my-lab/history'
+import { Route as AppMyLabPlanRouteImport } from './routes/app/my-lab/plan'
+import { Route as AppMyLabProposalRouteImport } from './routes/app/my-lab/proposal'
+import { Route as AppMyLabReportRouteImport } from './routes/app/my-lab/report'
+import { Route as AppMyLabSetupRouteImport } from './routes/app/my-lab/setup'
+import { Route as AppMyLabTopologyRouteImport } from './routes/app/my-lab/topology'
 import { Route as AppProjectIdIndexRouteImport } from './routes/app/project/$id/index'
 import { Route as AppProjectIdReportRouteImport } from './routes/app/project/$id/report'
 
@@ -78,6 +87,51 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/app/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppMyLabIndexRoute = AppMyLabIndexRouteImport.update({
+  id: '/app/my-lab/',
+  path: '/app/my-lab/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppMyLabChecksRoute = AppMyLabChecksRouteImport.update({
+  id: '/app/my-lab/checks',
+  path: '/app/my-lab/checks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppMyLabHealthRoute = AppMyLabHealthRouteImport.update({
+  id: '/app/my-lab/health',
+  path: '/app/my-lab/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppMyLabHistoryRoute = AppMyLabHistoryRouteImport.update({
+  id: '/app/my-lab/history',
+  path: '/app/my-lab/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppMyLabPlanRoute = AppMyLabPlanRouteImport.update({
+  id: '/app/my-lab/plan',
+  path: '/app/my-lab/plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppMyLabProposalRoute = AppMyLabProposalRouteImport.update({
+  id: '/app/my-lab/proposal',
+  path: '/app/my-lab/proposal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppMyLabReportRoute = AppMyLabReportRouteImport.update({
+  id: '/app/my-lab/report',
+  path: '/app/my-lab/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppMyLabSetupRoute = AppMyLabSetupRouteImport.update({
+  id: '/app/my-lab/setup',
+  path: '/app/my-lab/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppMyLabTopologyRoute = AppMyLabTopologyRouteImport.update({
+  id: '/app/my-lab/topology',
+  path: '/app/my-lab/topology',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppProjectIdIndexRoute = AppProjectIdIndexRouteImport.update({
   id: '/app/project/$id/',
   path: '/app/project/$id/',
@@ -101,6 +155,15 @@ export interface FileRoutesByFullPath {
   '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
+  '/app/my-lab/checks': typeof AppMyLabChecksRoute
+  '/app/my-lab/health': typeof AppMyLabHealthRoute
+  '/app/my-lab/history': typeof AppMyLabHistoryRoute
+  '/app/my-lab/plan': typeof AppMyLabPlanRoute
+  '/app/my-lab/proposal': typeof AppMyLabProposalRoute
+  '/app/my-lab/report': typeof AppMyLabReportRoute
+  '/app/my-lab/setup': typeof AppMyLabSetupRoute
+  '/app/my-lab/topology': typeof AppMyLabTopologyRoute
+  '/app/my-lab/': typeof AppMyLabIndexRoute
   '/app/project/$id/report': typeof AppProjectIdReportRoute
   '/app/project/$id/': typeof AppProjectIdIndexRoute
 }
@@ -116,6 +179,15 @@ export interface FileRoutesByTo {
   '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app': typeof AppIndexRoute
+  '/app/my-lab/checks': typeof AppMyLabChecksRoute
+  '/app/my-lab/health': typeof AppMyLabHealthRoute
+  '/app/my-lab/history': typeof AppMyLabHistoryRoute
+  '/app/my-lab/plan': typeof AppMyLabPlanRoute
+  '/app/my-lab/proposal': typeof AppMyLabProposalRoute
+  '/app/my-lab/report': typeof AppMyLabReportRoute
+  '/app/my-lab/setup': typeof AppMyLabSetupRoute
+  '/app/my-lab/topology': typeof AppMyLabTopologyRoute
+  '/app/my-lab': typeof AppMyLabIndexRoute
   '/app/project/$id/report': typeof AppProjectIdReportRoute
   '/app/project/$id': typeof AppProjectIdIndexRoute
 }
@@ -132,6 +204,15 @@ export interface FileRoutesById {
   '/app/projects': typeof AppProjectsRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/': typeof AppIndexRoute
+  '/app/my-lab/checks': typeof AppMyLabChecksRoute
+  '/app/my-lab/health': typeof AppMyLabHealthRoute
+  '/app/my-lab/history': typeof AppMyLabHistoryRoute
+  '/app/my-lab/plan': typeof AppMyLabPlanRoute
+  '/app/my-lab/proposal': typeof AppMyLabProposalRoute
+  '/app/my-lab/report': typeof AppMyLabReportRoute
+  '/app/my-lab/setup': typeof AppMyLabSetupRoute
+  '/app/my-lab/topology': typeof AppMyLabTopologyRoute
+  '/app/my-lab/': typeof AppMyLabIndexRoute
   '/app/project/$id/report': typeof AppProjectIdReportRoute
   '/app/project/$id/': typeof AppProjectIdIndexRoute
 }
@@ -149,6 +230,15 @@ export interface FileRouteTypes {
     | '/app/projects'
     | '/app/settings'
     | '/app/'
+    | '/app/my-lab/checks'
+    | '/app/my-lab/health'
+    | '/app/my-lab/history'
+    | '/app/my-lab/plan'
+    | '/app/my-lab/proposal'
+    | '/app/my-lab/report'
+    | '/app/my-lab/setup'
+    | '/app/my-lab/topology'
+    | '/app/my-lab/'
     | '/app/project/$id/report'
     | '/app/project/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -164,6 +254,15 @@ export interface FileRouteTypes {
     | '/app/projects'
     | '/app/settings'
     | '/app'
+    | '/app/my-lab/checks'
+    | '/app/my-lab/health'
+    | '/app/my-lab/history'
+    | '/app/my-lab/plan'
+    | '/app/my-lab/proposal'
+    | '/app/my-lab/report'
+    | '/app/my-lab/setup'
+    | '/app/my-lab/topology'
+    | '/app/my-lab'
     | '/app/project/$id/report'
     | '/app/project/$id'
   id:
@@ -179,6 +278,15 @@ export interface FileRouteTypes {
     | '/app/projects'
     | '/app/settings'
     | '/app/'
+    | '/app/my-lab/checks'
+    | '/app/my-lab/health'
+    | '/app/my-lab/history'
+    | '/app/my-lab/plan'
+    | '/app/my-lab/proposal'
+    | '/app/my-lab/report'
+    | '/app/my-lab/setup'
+    | '/app/my-lab/topology'
+    | '/app/my-lab/'
     | '/app/project/$id/report'
     | '/app/project/$id/'
   fileRoutesById: FileRoutesById
@@ -195,6 +303,15 @@ export interface RootRouteChildren {
   AppProjectsRoute: typeof AppProjectsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppMyLabChecksRoute: typeof AppMyLabChecksRoute
+  AppMyLabHealthRoute: typeof AppMyLabHealthRoute
+  AppMyLabHistoryRoute: typeof AppMyLabHistoryRoute
+  AppMyLabPlanRoute: typeof AppMyLabPlanRoute
+  AppMyLabProposalRoute: typeof AppMyLabProposalRoute
+  AppMyLabReportRoute: typeof AppMyLabReportRoute
+  AppMyLabSetupRoute: typeof AppMyLabSetupRoute
+  AppMyLabTopologyRoute: typeof AppMyLabTopologyRoute
+  AppMyLabIndexRoute: typeof AppMyLabIndexRoute
   AppProjectIdReportRoute: typeof AppProjectIdReportRoute
   AppProjectIdIndexRoute: typeof AppProjectIdIndexRoute
 }
@@ -278,6 +395,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/my-lab/': {
+      id: '/app/my-lab/'
+      path: '/app/my-lab'
+      fullPath: '/app/my-lab/'
+      preLoaderRoute: typeof AppMyLabIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/my-lab/checks': {
+      id: '/app/my-lab/checks'
+      path: '/app/my-lab/checks'
+      fullPath: '/app/my-lab/checks'
+      preLoaderRoute: typeof AppMyLabChecksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/my-lab/health': {
+      id: '/app/my-lab/health'
+      path: '/app/my-lab/health'
+      fullPath: '/app/my-lab/health'
+      preLoaderRoute: typeof AppMyLabHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/my-lab/history': {
+      id: '/app/my-lab/history'
+      path: '/app/my-lab/history'
+      fullPath: '/app/my-lab/history'
+      preLoaderRoute: typeof AppMyLabHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/my-lab/plan': {
+      id: '/app/my-lab/plan'
+      path: '/app/my-lab/plan'
+      fullPath: '/app/my-lab/plan'
+      preLoaderRoute: typeof AppMyLabPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/my-lab/proposal': {
+      id: '/app/my-lab/proposal'
+      path: '/app/my-lab/proposal'
+      fullPath: '/app/my-lab/proposal'
+      preLoaderRoute: typeof AppMyLabProposalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/my-lab/report': {
+      id: '/app/my-lab/report'
+      path: '/app/my-lab/report'
+      fullPath: '/app/my-lab/report'
+      preLoaderRoute: typeof AppMyLabReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/my-lab/setup': {
+      id: '/app/my-lab/setup'
+      path: '/app/my-lab/setup'
+      fullPath: '/app/my-lab/setup'
+      preLoaderRoute: typeof AppMyLabSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/my-lab/topology': {
+      id: '/app/my-lab/topology'
+      path: '/app/my-lab/topology'
+      fullPath: '/app/my-lab/topology'
+      preLoaderRoute: typeof AppMyLabTopologyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/project/$id/': {
       id: '/app/project/$id/'
       path: '/app/project/$id'
@@ -307,6 +487,15 @@ const rootRouteChildren: RootRouteChildren = {
   AppProjectsRoute: AppProjectsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
+  AppMyLabChecksRoute: AppMyLabChecksRoute,
+  AppMyLabHealthRoute: AppMyLabHealthRoute,
+  AppMyLabHistoryRoute: AppMyLabHistoryRoute,
+  AppMyLabPlanRoute: AppMyLabPlanRoute,
+  AppMyLabProposalRoute: AppMyLabProposalRoute,
+  AppMyLabReportRoute: AppMyLabReportRoute,
+  AppMyLabSetupRoute: AppMyLabSetupRoute,
+  AppMyLabTopologyRoute: AppMyLabTopologyRoute,
+  AppMyLabIndexRoute: AppMyLabIndexRoute,
   AppProjectIdReportRoute: AppProjectIdReportRoute,
   AppProjectIdIndexRoute: AppProjectIdIndexRoute,
 }

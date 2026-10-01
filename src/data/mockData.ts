@@ -14,7 +14,8 @@ function buildProject(
   goal: Project['goal'],
   level: Project['experienceLevel'],
   budget: number,
-  hardwareIds: string[]
+  hardwareIds: string[],
+  links: [number, number, Project['connections'][number]['type']][] = []
 ): Project {
   const now = new Date().toISOString();
   const components = hardwareIds.map((hwId, i) =>
@@ -34,7 +35,12 @@ function buildProject(
     electricityCostPerKwh: 0.15,
     status: 'draft',
     components,
-    connections: [],
+    connections: links.map(([from, to, type], i) => ({
+      id: `${id}-conn-${i}`,
+      fromId: components[from].instanceId,
+      toId: components[to].instanceId,
+      type,
+    })),
     createdAt: now,
     updatedAt: now,
     version: 1,
@@ -49,7 +55,8 @@ export const mockProjects: Project[] = [
     'self-hosting',
     'beginner',
     450,
-    ['hw-mini-pc', 'hw-basic-router', 'hw-managed-switch-1g', 'hw-small-ups']
+    ['hw-mini-pc', 'hw-basic-router', 'hw-managed-switch-1g', 'hw-small-ups'],
+    [[1, 2, 'ethernet'], [2, 0, 'ethernet'], [3, 0, 'power']]
   ),
   buildProject(
     'demo-proxmox',
@@ -111,3 +118,8 @@ export const exploreExamples = [
     estimatedBudget: 950,
   },
 ];
+
+/** Demo projects visible for a plan: Free sees the single pre-made starter lab; Pro sees all. */
+export function getDemoProjects(isPro: boolean): Project[] {
+  return isPro ? mockProjects : mockProjects.slice(0, 1);
+}

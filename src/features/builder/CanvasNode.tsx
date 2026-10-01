@@ -206,9 +206,9 @@ export function CanvasNode({
         ))}
       </div>
 
-      <div className="absolute -top-3 right-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute -top-9 right-0 z-20 flex gap-1 opacity-100 lg:-top-3 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
         <button
-          className="flex items-center justify-center w-6 h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-accent hover:border-accent transition-colors"
+          className="hidden lg:flex items-center justify-center w-7 h-7 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-accent hover:border-accent transition-colors"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
@@ -220,7 +220,7 @@ export function CanvasNode({
           <Link2 className="w-3 h-3" />
         </button>
         <button
-          className="flex items-center justify-center w-6 h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-base-100 hover:border-base-500 transition-colors"
+          className="flex items-center justify-center w-7 h-7 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-base-100 hover:border-base-500 transition-colors"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
@@ -232,7 +232,7 @@ export function CanvasNode({
           <Copy className="w-3 h-3" />
         </button>
         <button
-          className="flex items-center justify-center w-6 h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-danger-400 hover:border-danger-500/50 transition-colors"
+          className="flex items-center justify-center w-7 h-7 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-danger-400 hover:border-danger-500/50 transition-colors"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();

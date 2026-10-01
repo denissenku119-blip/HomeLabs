@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { shareContent } from '@/services/share.service';
 import { useI18n } from '@/i18n/I18nContext';
 import { formatDateLocale, formatCostLocale } from '@/i18n/formatters';
+import { loadMyLab } from '@/features/mylab/myLabStore';
+import { computeLabHealth, healthSummaryKey, type LabHealth } from '@/features/mylab/labHealth';
 
 const SEVERITY_ICONS = {
   good: CheckCircle2,
@@ -56,21 +58,27 @@ const SECTIONS = [
   { id: 'notes', key: 'report.notes' },
 ];
 
-export function ReportPage() {
+const MYLAB_SECTIONS = [
+  ...SECTIONS.filter((s) => s.id !== 'notes'),
+  { id: 'labhealth', key: 'mylabreport.healthSection' },
+];
+
+/** Shared report for Projects and (with myLab) the current My Lab baseline — never the proposal. */
+export function ReportPage({ myLab = false }: { myLab?: boolean } = {}) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t, locale } = useI18n();
   const [activeSection, setActiveSection] = useState('overview');
 
-  const report = useMemo<ArchitectureReport | null>(() => {
-    if (!id) return null;
-    const project = findProject(id);
-    if (!project) return null;
-    const metrics = calculateProjectMetrics(project, {
+  const built = useMemo<{ report: ArchitectureReport; health: LabHealth | null } | null>(() => {
+    const project = myLab ? loadMyLab() : id ? findProject(id) : null;
+    if (!project || (myLab && project.components.length === 0)) return null;
+    const health = myLab ? computeLabHealth(project, t) : null;
+    const metrics = health?.metrics ?? calculateProjectMetrics(project, {
       electricityCostPerKwh: project.electricityCostPerKwh,
     });
-    const analysis = analyzeArchitecture(project, metrics);
-    return buildArchitectureReport(
+    const analysis = health?.analysis ?? analyzeArchitecture(project, metrics);
+    const report = buildArchitectureReport(
       {
         name: project.name,
         goal: project.goal,
@@ -85,23 +93,27 @@ export function ReportPage() {
       metrics,
       analysis
     );
-  }, [id]);
+    return { report, health };
+  }, [id, myLab, t]);
+  const report = built?.report ?? null;
+  const health = built?.health ?? null;
+  const sections = myLab ? MYLAB_SECTIONS : SECTIONS;
 
   if (!report) {
     return (
       <div className="min-h-screen bg-base-950 flex items-center justify-center p-6">
         <div className="text-center max-w-md">
           <FileText className="w-12 h-12 text-base-600 mx-auto mb-4" />
-          <h1 className="text-lg font-semibold text-base-100 mb-2">{t('report.projectNotFound')}</h1>
+          <h1 className="text-lg font-semibold text-base-100 mb-2">{myLab ? t('mylab.empty.title') : t('report.projectNotFound')}</h1>
           <p className="text-sm text-base-400 mb-6">
-            {t('report.projectNotFoundDescription')}
+            {myLab ? t('mylab.empty.description') : t('report.projectNotFoundDescription')}
           </p>
           <Link
-            to="/app/projects"
+            to={myLab ? '/app/my-lab' : '/app/projects'}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-accent text-base-950 hover:bg-accent-400 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
-            {t('report.backToProjects')}
+            {myLab ? t('mylabreport.back') : t('report.backToProjects')}
           </Link>
         </div>
       </div>
@@ -112,8 +124,8 @@ export function ReportPage() {
 
   const handleShare = async () => {
     await shareContent({
-      title: t('report.shareTitle', { project: report.projectName }),
-      text: t('report.shareSummary', {
+      title: myLab ? t('mylabreport.title') : t('report.shareTitle', { project: report.projectName }),
+      text: t(myLab ? 'mylabreport.shareSummary' : 'report.shareSummary', {
         project: report.projectName,
         count: report.components.length,
         score: report.health.score,
@@ -127,11 +139,11 @@ export function ReportPage() {
       {/* Report top bar (hidden in print) */}
       <div className="report-no-print sticky top-0 z-50 flex items-center gap-3 px-4 sm:px-6 py-2.5 bg-base-900 border-b border-base-700">
         <button
-          onClick={() => navigate(`/app/project/${id}`)}
+          onClick={() => navigate(myLab ? '/app/my-lab' : `/app/project/${id}`)}
           className="flex items-center gap-1.5 text-xs text-base-300 hover:text-base-100 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{t('report.backToBuilder')}</span>
+          <span className="hidden sm:inline">{myLab ? t('mylabreport.back') : t('report.backToBuilder')}</span>
         </button>
         <div className="flex-1" />
         <button
@@ -156,7 +168,7 @@ export function ReportPage() {
       {/* Section navigation (hidden in print) */}
       <div className="report-no-print sticky top-[41px] z-40 border-b border-base-700 bg-base-900/95 backdrop-blur">
         <div className="flex items-center gap-1 px-4 sm:px-6 py-2 overflow-x-auto">
-          {SECTIONS.map((section) => (
+          {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => {
@@ -178,6 +190,12 @@ export function ReportPage() {
 
       {/* Report content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-20">
+        {myLab && (
+          <div className="mb-4">
+            <p className="text-2xs uppercase tracking-wider text-accent font-semibold">{t('mylabreport.title')}</p>
+            <p className="mt-1 text-xs text-base-400">{t('mylabreport.modelNote')}</p>
+          </div>
+        )}
         <ReportHeader report={report} t={t} locale={locale} />
         <div className="h-px bg-base-700 my-8" />
 
@@ -203,6 +221,7 @@ export function ReportPage() {
 
         <Section id="storage" title={t('report.storageAnalysis')}>
           <ReportStorage report={report} />
+          {myLab && <p className="mt-3 text-2xs text-base-500">{t('mylabreport.rawOnly')}</p>}
         </Section>
 
         <Section id="network" title={t('report.networkArchitecture')}>
@@ -229,9 +248,17 @@ export function ReportPage() {
           <ReportExpansion report={report} />
         </Section>
 
-        <Section id="notes" title={t('report.projectNotes')}>
-          <ReportNotes report={report} />
-        </Section>
+        {!myLab && (
+          <Section id="notes" title={t('report.projectNotes')}>
+            <ReportNotes report={report} />
+          </Section>
+        )}
+
+        {myLab && health && (
+          <Section id="labhealth" title={t('mylabreport.healthSection')}>
+            <MyLabHealthSummary health={health} t={t} />
+          </Section>
+        )}
 
         {/* Report footer */}
         <div className="mt-12 pt-6 border-t border-base-700">
@@ -239,6 +266,40 @@ export function ReportPage() {
             {t('report.generatedBy')} {formatDateLocale(new Date(), locale)}. {t('report.estimatesDisclaimer')}
           </p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function MyLabHealthSummary({ health, t }: { health: LabHealth; t: (k: string, p?: Record<string, string | number>) => string }) {
+  const top = health.checks.filter((c) => c.level === 'attention' || c.level === 'check').slice(0, 5);
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-base-200">{t(healthSummaryKey(health), { attention: health.counts.attention, check: health.counts.check })}</p>
+      <div className="grid grid-cols-3 gap-3">
+        <MetricBox label={t('labhealth.level.attention')} value={String(health.counts.attention)} icon={<XCircle className="w-3.5 h-3.5" />} valueClass="text-danger-400" />
+        <MetricBox label={t('labhealth.level.check')} value={String(health.counts.check)} icon={<AlertTriangle className="w-3.5 h-3.5" />} valueClass="text-warning-400" />
+        <MetricBox label={t('labhealth.level.info')} value={String(health.counts.info)} icon={<Info className="w-3.5 h-3.5" />} />
+      </div>
+      <div>
+        <h3 className="text-xs font-semibold text-base-100 mb-2">{t('mylabreport.topChecks')}</h3>
+        {top.length === 0 ? (
+          <p className="text-xs text-base-400">{t('mylabreport.noChecks')}</p>
+        ) : (
+          <ul className="space-y-2">
+            {top.map((c) => (
+              <li key={c.id} className="rounded-lg border border-base-700 bg-base-900 p-3">
+                <p className="text-xs font-medium text-base-100 break-words">{c.title}</p>
+                <p className="mt-1 text-2xs text-base-400 break-words">{c.what}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <p className="text-2xs text-base-500">{t('mylabreport.backupNote')}</p>
+      <div className="report-no-print flex flex-wrap gap-3 text-xs font-medium">
+        <Link to="/app/my-lab/health" className="text-accent">{t('labhealth.title')} →</Link>
+        <Link to="/app/my-lab/checks" className="text-accent">{t('labhealth.checks.title')} →</Link>
       </div>
     </div>
   );

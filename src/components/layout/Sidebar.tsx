@@ -10,6 +10,7 @@ import {
   Crown,
   Server,
   MessageSquare,
+  HardDrive,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/i18n/I18nContext';
@@ -21,6 +22,7 @@ import { useState } from 'react';
 
 const navItems = [
   { to: '/app', key: 'navigation.overview', icon: LayoutGrid, end: true },
+  { to: '/app/my-lab', key: 'navigation.myLab', icon: HardDrive },
   { to: '/app/projects', key: 'navigation.myProjects', icon: FolderKanban },
   { to: '/app/new', key: 'navigation.newProject', icon: Plus },
   { to: '/explore', key: 'navigation.explore', icon: Compass },
