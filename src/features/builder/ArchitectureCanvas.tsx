@@ -65,6 +65,57 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedConnId, setSelectedConnId] = useState<string | null>(null);
   const panState = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
+  // Two-finger pinch: tracked in the capture phase so it wins over node drag,
+  // connection handles and single-finger panning. Shares the same scale/pan state
+  // as the + / − buttons.
+  const touchPoints = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ dist: number; scale: number; pan: { x: number; y: number }; midX: number; midY: number } | null>(null);
+
+  const pinchMetrics = () => {
+    const [a, b] = Array.from(touchPoints.current.values());
+    return { dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, midX: (a.x + b.x) / 2, midY: (a.y + b.y) / 2 };
+  };
+
+  const handlePointerDownCapture = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'touch') return;
+    touchPoints.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touchPoints.current.size === 2) {
+      e.stopPropagation();
+      panState.current = null;
+      // Tell nodes to abandon any drag that the first finger started.
+      window.dispatchEvent(new Event('homelab:canvas-pinch'));
+      const m = pinchMetrics();
+      pinch.current = { dist: m.dist, scale, pan, midX: m.midX, midY: m.midY };
+    } else if (touchPoints.current.size > 2) {
+      e.stopPropagation();
+    }
+  };
+
+  const handlePointerMoveCapture = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!touchPoints.current.has(e.pointerId)) return;
+    touchPoints.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const start = pinch.current;
+    if (!start || touchPoints.current.size < 2) return;
+    e.stopPropagation();
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const m = pinchMetrics();
+    const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, start.scale * (m.dist / start.dist)));
+    const cx = (start.midX - rect.left - start.pan.x) / start.scale;
+    const cy = (start.midY - rect.top - start.pan.y) / start.scale;
+    onScaleChange(newScale);
+    onPanChange({ x: m.midX - rect.left - cx * newScale, y: m.midY - rect.top - cy * newScale });
+  };
+
+  const handlePointerEndCapture = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!touchPoints.current.has(e.pointerId)) return;
+    touchPoints.current.delete(e.pointerId);
+    if (pinch.current) {
+      // Swallow the release so it is never treated as a tap/connect.
+      e.stopPropagation();
+      if (touchPoints.current.size < 2) pinch.current = null;
+    }
+  };
 
   const screenToCanvas = useCallback(
     (clientX: number, clientY: number) => {
@@ -181,6 +232,10 @@ export function ArchitectureCanvas(props: ArchitectureCanvasProps) {
         'cursor-grab active:cursor-grabbing'
       )}
       style={{ touchAction: 'none' }}
+      onPointerDownCapture={handlePointerDownCapture}
+      onPointerMoveCapture={handlePointerMoveCapture}
+      onPointerUpCapture={handlePointerEndCapture}
+      onPointerCancelCapture={handlePointerEndCapture}
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}

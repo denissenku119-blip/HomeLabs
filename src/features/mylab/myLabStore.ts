@@ -29,15 +29,17 @@ export function loadMyLab(): Project | null {
   }
 }
 
-export function saveMyLab(lab: Project): void {
+export function saveMyLab(lab: Project): boolean {
   try {
     const payload: StoredMyLab = {
       schemaVersion: MY_LAB_SCHEMA_VERSION,
       lab: { ...lab, id: MY_LAB_ID },
     };
-    localStorage.setItem(MY_LAB_STORAGE_KEY, JSON.stringify(payload));
+    const json = JSON.stringify(payload);
+    localStorage.setItem(MY_LAB_STORAGE_KEY, json);
+    return localStorage.getItem(MY_LAB_STORAGE_KEY) === json;
   } catch {
-    // storage full or unavailable
+    return false; // storage full or unavailable; previous copy is kept
   }
 }
 

@@ -140,13 +140,48 @@ export function getStorageKey(projectId: string): string {
   return `${STORAGE_KEY_PREFIX}${projectId}`;
 }
 
-export function saveProject(project: Project): void {
+const DELETED_KEY = `${STORAGE_KEY_PREFIX}deleted`;
+
+/** Ids the user intentionally deleted. A pending autosave must never resurrect them. */
+export function getDeletedProjectIds(): string[] {
   try {
-    const key = getStorageKey(project.id);
-    localStorage.setItem(key, JSON.stringify(project));
-    saveProjectId(project.id);
+    const parsed: unknown = JSON.parse(localStorage.getItem(DELETED_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
   } catch {
-    // Storage may be full or unavailable
+    return [];
+  }
+}
+
+export function isProjectDeleted(id: string): boolean {
+  return getDeletedProjectIds().includes(id);
+}
+
+/** Only an explicit backup restore may undo a deletion. */
+export function clearProjectDeletion(ids: string[]): void {
+  try {
+    const remaining = getDeletedProjectIds().filter((id) => !ids.includes(id));
+    localStorage.setItem(DELETED_KEY, JSON.stringify(remaining));
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Writes the project and reads it back. Returns false (never pretends) when
+ * the write failed; the previous good copy stays untouched in that case
+ * because localStorage replaces a key atomically or not at all.
+ */
+export function saveProject(project: Project): boolean {
+  try {
+    if (isProjectDeleted(project.id)) return true; // deleted on purpose: drop late autosaves
+    const key = getStorageKey(project.id);
+    const json = JSON.stringify(project);
+    localStorage.setItem(key, json);
+    if (localStorage.getItem(key) !== json) return false;
+    saveProjectId(project.id);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -163,6 +198,10 @@ export function loadProject(projectId: string): Project | null {
 
 export function deleteProject(projectId: string): void {
   try {
+    const deleted = getDeletedProjectIds();
+    if (!deleted.includes(projectId)) {
+      localStorage.setItem(DELETED_KEY, JSON.stringify([...deleted, projectId]));
+    }
     localStorage.removeItem(getStorageKey(projectId));
     const ids = getProjectIds().filter((id) => id !== projectId);
     localStorage.setItem(`${STORAGE_KEY_PREFIX}index`, JSON.stringify(ids));
@@ -203,9 +242,9 @@ function recoverProjectIds(): string[] {
     const indexKey = `${STORAGE_KEY_PREFIX}index`;
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
-      if (!key || key === indexKey || !key.startsWith(STORAGE_KEY_PREFIX)) continue;
+      if (!key || key === indexKey || key === DELETED_KEY || !key.startsWith(STORAGE_KEY_PREFIX)) continue;
       const id = key.slice(STORAGE_KEY_PREFIX.length);
-      if (id && loadProject(id)) ids.push(id);
+      if (id && !isProjectDeleted(id) && loadProject(id)) ids.push(id);
     }
     return ids;
   } catch {

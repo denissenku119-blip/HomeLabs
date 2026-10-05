@@ -42,6 +42,8 @@ export const PRO_BENEFITS: string[] = [
   'Full calculations',
   'Full reporting capability',
   'Complete app experience',
+  'My Lab — model, check and plan changes to your real homelab',
+  'Custom Hardware components',
 ];
 
 export const FREE_BENEFITS: string[] = [
@@ -50,7 +52,6 @@ export const FREE_BENEFITS: string[] = [
   'Connections and full builder trial',
   'Basic calculations',
   'Report access',
-  'Up to 2 custom hardware components',
 ];
 
 const PLAN_KEY = 'homelab-architect:plan';

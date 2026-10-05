@@ -27,6 +27,7 @@ export function FeedbackPage() {
   const [errors, setErrors] = useState<Errors>({});
   const [submitted, setSubmitted] = useState<FeedbackEntry | null>(null);
   const [sent, setSent] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -52,6 +53,7 @@ export function FeedbackPage() {
     const outcome = await submitFeedback(result.data, APP_VERSION);
     setSending(false);
     setSent(outcome.sent);
+    setSendError(outcome.error ?? null);
     setSubmitted(outcome.entry);
   };
 
@@ -109,12 +111,12 @@ export function FeedbackPage() {
               </span>
               <div className="flex-1 min-w-0">
                 <h2 className="text-sm font-semibold text-base-50">
-                  {sent ? 'Feedback sent' : 'Saved on this device'}
+                  {sent ? 'Feedback sent successfully' : 'Feedback could not be sent'}
                 </h2>
                 <p className="text-sm text-base-300 mt-1 leading-relaxed">
                   {sent
                     ? 'Thanks — your feedback reached us and a copy is kept on this device.'
-                    : 'We could not reach the server, so your feedback is saved on this device only. Copy the details below and try again later.'}
+                    : `${sendError ?? 'Something went wrong.'} Your feedback is saved on this device. Copy the details below or try again later.`}
                 </p>
               </div>
             </div>

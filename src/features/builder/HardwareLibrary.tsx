@@ -21,10 +21,11 @@ import { searchHardware, groupByCategory } from '@/utils/hardwareSearch';
 import { formatCost, formatPower, formatStorage, formatNetwork } from '@/utils/calculations';
 import { cn } from '@/lib/utils';
 import { UpgradeModal } from '@/components/pro/UpgradePanel';
+import { Crown } from 'lucide-react';
+import { useI18n } from '@/i18n/I18nContext';
 import {
   usePlan,
   isStarterHardware,
-  FREE_CUSTOM_HARDWARE_LIMIT,
 } from '@/features/entitlements/plan';
 
 interface HardwareLibraryProps {
@@ -54,7 +55,8 @@ export function HardwareLibrary({ onAdd, onAddCustom, compact, customCount = 0 }
     () => (isPro ? hardwareCatalog : hardwareCatalog.filter((hw) => isStarterHardware(hw.id))),
     [isPro]
   );
-  const customLimitReached = !isPro && customCount >= FREE_CUSTOM_HARDWARE_LIMIT;
+  const { t } = useI18n();
+  void customCount;
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
   const [expanded, setExpanded] = useState<Set<ComponentCategory>>(
@@ -190,28 +192,25 @@ export function HardwareLibrary({ onAdd, onAddCustom, compact, customCount = 0 }
         {!isPro && (
           <button
             onClick={() =>
-              setUpgradeReason('The Free plan includes a curated starter library. Pro unlocks the full hardware catalog.')
+              setUpgradeReason(t('hwlib.unlockReason'))
             }
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-md bg-accent/10 border border-accent/30 text-accent hover:bg-accent/15 transition-colors"
           >
-            Unlock the full hardware library
+            {t('hwlib.unlock')}
           </button>
         )}
         <button
           onClick={() =>
-            customLimitReached
-              ? setUpgradeReason(
-                  `Free includes up to ${FREE_CUSTOM_HARDWARE_LIMIT} custom hardware components per project. Pro removes the limit.`
-                )
-              : onAddCustom()
+            !isPro ? setUpgradeReason(t('progate.custom.reason')) : onAddCustom()
           }
           className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-md bg-base-850 border border-base-600 text-base-200 hover:text-accent hover:border-accent/40 transition-colors"
         >
           <Wrench className="w-3.5 h-3.5" />
           Add Custom Hardware
           {!isPro && (
-            <span className="text-2xs text-base-400">
-              {customCount}/{FREE_CUSTOM_HARDWARE_LIMIT}
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-accent/15 text-2xs font-semibold text-accent">
+              <Crown className="w-3 h-3" />
+              {t('progate.proBadge')}
             </span>
           )}
         </button>
@@ -341,6 +340,14 @@ function HardwareDetailPanel({
               label="Typical price"
               value={formatCost(hw.typicalPrice, hw.currency)}
               sub={sourceLabel}
+            />
+          )}
+          {hw.typicalPrice <= 0 && hw.category !== 'other' && (
+            <DetailStat
+              icon={<span className="text-xs font-bold">$</span>}
+              label="Typical price"
+              value="Price not provided"
+              sub="Enter your own price"
             />
           )}
           {hw.powerWatts > 0 && (

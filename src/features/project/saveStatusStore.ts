@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 
-export type SaveStatus = 'saved' | 'saving';
+export type SaveStatus = 'saved' | 'saving' | 'error';
 
 let current: SaveStatus = 'saved';
 const listeners = new Set<(status: SaveStatus) => void>();

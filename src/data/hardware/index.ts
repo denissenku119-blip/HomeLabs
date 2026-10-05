@@ -4,6 +4,7 @@ import { storageHardware } from '@/data/hardware/storage';
 import { networkingHardware } from '@/data/hardware/networking';
 import { powerHardware } from '@/data/hardware/power';
 import { otherHardware } from '@/data/hardware/other';
+import { expandedHardware } from '@/data/hardware/expanded';
 
 export const hardwareCatalog: HardwareDefinition[] = [
   ...computeHardware,
@@ -11,6 +12,7 @@ export const hardwareCatalog: HardwareDefinition[] = [
   ...networkingHardware,
   ...powerHardware,
   ...otherHardware,
+  ...expandedHardware,
 ];
 
 export const hardwareById = new Map<string, HardwareDefinition>(

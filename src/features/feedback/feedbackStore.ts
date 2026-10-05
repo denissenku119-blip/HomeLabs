@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { getPlatform } from '@/services/platform.service';
+import { sendFeedbackEmail } from '@/lib/feedback.functions';
 
 export const FEEDBACK_TYPES = [
   { value: 'bug', label: 'Bug report' },
@@ -109,17 +110,34 @@ export async function submitFeedback(
   appVersion: string
 ): Promise<SubmitResult> {
   const entry = saveFeedback(input, appVersion);
+  const platform = getPlatform();
 
+  // Private database copy (kept as before); delivery success is decided by the email.
   try {
-    const { error } = await supabase.from('feedback').insert({
+    await supabase.from('feedback').insert({
       type: entry.type,
       subject: entry.subject,
       message: entry.message,
       email: entry.email ? entry.email : null,
       app_version: appVersion,
-      platform: getPlatform(),
+      platform,
     });
-    if (error) return { entry, sent: false, error: error.message };
+  } catch {
+    // ignore; email result below is authoritative
+  }
+
+  try {
+    const res = await sendFeedbackEmail({
+      data: {
+        type: entry.type,
+        subject: entry.subject,
+        message: entry.message,
+        email: entry.email || '',
+        appVersion,
+        platform: String(platform),
+      },
+    });
+    if (!res.ok) return { entry, sent: false, error: res.error };
     return { entry, sent: true };
   } catch {
     return { entry, sent: false, error: 'Network unavailable' };

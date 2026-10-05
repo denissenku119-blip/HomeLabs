@@ -8,6 +8,8 @@ import {
   createCustomHardwareComponent,
   createConnection,
   getSmartPlacement,
+  isProjectDeleted,
+  clearProjectDeletion,
 } from '@/utils/projectStore';
 import { findProject } from '@/utils/projectLookup';
 import { setSaveStatus } from '@/features/project/saveStatusStore';
@@ -47,11 +49,17 @@ export interface ProjectActions {
  */
 export interface ProjectStorage {
   load: (id: string) => Project | null;
-  save: (project: Project) => void;
+  /** Returns false when the write failed. */
+  save: (project: Project) => boolean | void;
 }
 
 const defaultStorage: ProjectStorage = {
-  load: (id) => loadProject(id) ?? findProject(id),
+  load: (id) => {
+    // Reopening a bundled demo is an explicit choice, so a past deletion of
+    // its saved copy must not block saving new edits to it.
+    if (id.startsWith('demo-') && isProjectDeleted(id)) clearProjectDeletion([id]);
+    return loadProject(id) ?? findProject(id);
+  },
   save: saveProject,
 };
 
@@ -93,16 +101,23 @@ export function useProjectState(
   const pendingWrite = useRef(false);
   const firstRun = useRef(true);
 
+  // Never report "Saved" unless the write actually landed; on failure keep
+  // the change pending so the next edit / app-hide retries it.
+  const writeNow = () => {
+    saveTimer.current = null;
+    const ok = storageRef.current.save(latestProject.current) !== false;
+    pendingWrite.current = !ok;
+    setSaved(ok);
+    setSaveStatus(ok ? 'saved' : 'error');
+  };
+
   const flush = useCallback(() => {
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
     }
     if (!pendingWrite.current) return;
-    storageRef.current.save(latestProject.current);
-    pendingWrite.current = false;
-    setSaved(true);
-    setSaveStatus('saved');
+    writeNow();
   }, []);
 
   useEffect(() => {
@@ -116,12 +131,7 @@ export function useProjectState(
     setSaved(false);
     setSaveStatus('saving');
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      storageRef.current.save(latestProject.current);
-      pendingWrite.current = false;
-      setSaved(true);
-      setSaveStatus('saved');
-    }, 600);
+    saveTimer.current = setTimeout(writeNow, 250);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };

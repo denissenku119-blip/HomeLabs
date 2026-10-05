@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useParams, useLocation, useNavigate, Link } from '@/lib/router-compat';
-import { Save, Settings, FileText, Trash2, Loader2 } from 'lucide-react';
+import { Save, Settings, FileText, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { AppShell } from '@/components/layout/AppShell';
 import { BackButton } from '@/components/layout/BackButton';
 import { Button } from '@/components/ui/Button';
@@ -54,13 +54,15 @@ export function ProjectWorkspacePage() {
             aria-live="polite"
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-2xs text-base-300 border border-base-700 bg-base-850"
           >
-            {saveStatus === 'saving' ? (
+            {saveStatus === 'error' ? (
+              <AlertTriangle className="w-3.5 h-3.5 text-danger-500" />
+            ) : saveStatus === 'saving' ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
             ) : (
               <Save className="w-3.5 h-3.5 text-success-500" />
             )}
             <span className="hidden sm:inline">
-              {saveStatus === 'saving' ? 'Saving…' : t('workspace.saved')}
+              {saveStatus === 'error' ? t('save.failed') : saveStatus === 'saving' ? 'Saving…' : t('workspace.saved')}
             </span>
           </span>
           <ShareProjectButton project={existing ?? null} />

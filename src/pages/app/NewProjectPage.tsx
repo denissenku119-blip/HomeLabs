@@ -84,10 +84,10 @@ export function NewProjectPage() {
 
         {limitReached ? (
           <Card className="mt-8">
-            <UpgradePanel reason={`Free includes ${FREE_PROJECT_LIMIT} saved project, and you already have one. Pro unlocks unlimited projects — your existing project stays untouched.`} />
+            <UpgradePanel reason={t('progate.project.reason')} />
             <div className="mt-4 pt-4 border-t border-base-700 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
               <Button variant="ghost" onClick={() => navigate('/app/projects')}>
-                Back to projects
+                {t('progate.project.back')}
               </Button>
             </div>
           </Card>

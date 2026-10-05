@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent as ReactPointerEvent, type KeyboardEvent } from 'react';
+import { useRef, useEffect, type PointerEvent as ReactPointerEvent, type KeyboardEvent } from 'react';
 import { Cpu, HardDrive, Network, Zap, Server, Shield, Box, Trash2, Link2, Copy } from 'lucide-react';
 import type { ProjectComponent, ComponentCategory } from '@/types';
 import { cn } from '@/lib/utils';
@@ -100,6 +100,18 @@ export function CanvasNode({
       onSelect(component.instanceId);
     }
   };
+
+  // A two-finger pinch on the canvas cancels any drag and puts the node back.
+  useEffect(() => {
+    const onPinch = () => {
+      const d = dragState.current;
+      if (!d) return;
+      if (d.moved) onMove(component.instanceId, d.origX, d.origY);
+      dragState.current = null;
+    };
+    window.addEventListener('homelab:canvas-pinch', onPinch);
+    return () => window.removeEventListener('homelab:canvas-pinch', onPinch);
+  }, [component.instanceId, onMove]);
 
   const handlePointerCancel = () => {
     dragState.current = null;
@@ -206,9 +218,10 @@ export function CanvasNode({
         ))}
       </div>
 
-      <div className="absolute -top-9 right-0 z-20 flex gap-1 opacity-100 lg:-top-3 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+      {/* Controls sit outside the right edge so the top connection node stays clear. */}
+      <div className="absolute top-0 -right-10 lg:-right-8 z-20 flex flex-col gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 transition-opacity">
         <button
-          className="hidden lg:flex items-center justify-center w-7 h-7 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-accent hover:border-accent transition-colors"
+          className="hidden lg:flex items-center justify-center w-8 h-8 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-accent hover:border-accent transition-colors"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
@@ -220,7 +233,7 @@ export function CanvasNode({
           <Link2 className="w-3 h-3" />
         </button>
         <button
-          className="flex items-center justify-center w-7 h-7 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-base-100 hover:border-base-500 transition-colors"
+          className="flex items-center justify-center w-8 h-8 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-base-100 hover:border-base-500 transition-colors"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
@@ -232,7 +245,7 @@ export function CanvasNode({
           <Copy className="w-3 h-3" />
         </button>
         <button
-          className="flex items-center justify-center w-7 h-7 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-danger-400 hover:border-danger-500/50 transition-colors"
+          className="flex items-center justify-center w-8 h-8 lg:w-6 lg:h-6 rounded-md bg-base-800 border border-base-600 text-base-300 hover:text-danger-400 hover:border-danger-500/50 transition-colors"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();

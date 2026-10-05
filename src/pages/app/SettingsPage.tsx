@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Save, Globe, ChevronRight, Crown, Compass, LifeBuoy, Share2 } from "lucide-react";
+import { BackupCard } from "@/features/backup/BackupCard";
 import { ShareAppButton } from "@/components/ShareAppButton";
 import { Link } from "@/lib/router-compat";
 import { AppShell } from "@/components/layout/AppShell";
@@ -258,6 +259,8 @@ export function SettingsPage() {
               />
             </div>
           </Card>
+
+          <BackupCard />
 
           {/* Support & legal */}
           <Card>
